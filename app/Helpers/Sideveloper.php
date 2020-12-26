@@ -112,7 +112,7 @@
 		#GET MENU
 		public static function getMenu($id_privilege){
 			$menu_data = DB::table('menus')
-				->distinct()->select('urutan','menus.id_menu','nama_menu as nama','link','ikon')
+				->distinct()->select('urutan','menus.id_menu','nama_menu as nama','link','ikon', 'color')
 				->join('permissions','permissions.id_menu','=','menus.id_menu')
 				->where('id_privilege',$id_privilege)
 				->orderBy('urutan')->get();

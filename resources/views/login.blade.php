@@ -56,7 +56,6 @@
     <link rel="stylesheet" href="{{url('assets')}}/_custom/css/style.css"> 
     <script type="text/javascript" src="{{url('vendor.js')}}"></script>
     <script type="text/javascript" src="{{url('bundle.js')}}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
   </head>
   <body class="app">
     <div id='loader'>

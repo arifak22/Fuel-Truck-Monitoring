@@ -18,3 +18,4 @@ Route::get('/', function () {
 
 Route::post('login', [ 'as' => 'login', 'uses' => 'LoginController@getIndex']);
 Sideveloper::routeController('/login','Auth\LoginController');
+Sideveloper::routeController('/home','HomeController');
