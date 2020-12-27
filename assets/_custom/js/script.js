@@ -48,7 +48,7 @@ var apiRespone = function(res, callback = null, callthen = null){
             icon:  'error',
         });
         if(res.jwt_token){
-            localStorage.setItem("pelops_token", res.jwt_token);
+            localStorage.setItem("jwt_token", res.jwt_token);
             if(confirm('Token Reseted, please reload!')){
                 window.location.reload();  
             }
