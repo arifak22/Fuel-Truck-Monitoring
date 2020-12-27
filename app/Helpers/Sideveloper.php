@@ -300,32 +300,32 @@
 			return "<div class=\"form-group m-form__group\">
                 <label>
                     $label
-                </label>
-				<select class=\"form-control m-input m-input--pill\" name=\"$name\" id=\"$name\" $add>
+                </label><br/>
+				<select class=\"form-control\" name=\"$name\" id=\"$name\" $add>
 					$option
 				</select>
             </div>";
 		}
-		#SELECT 
-		public static function formSelect2($label, $data = null, $name, $value = '', $multipe=false){
+		
+		#SELECT
+		public static function formSelect2($label, $data = null, $name, $value = '', $add=''){
 			$option = '';
-			$varmultiple = $multipe ? " multiple=\"multiple\"" : '';
-			$id = $multipe ? $name."[]" : $name;
+			$selected = '';
 			if($data){
 				foreach($data as $d){
-					$option .= "<option value=\"$d[value]\">$d[name]</option>";
+					$selected = $d['value'] == $value ? 'selected' : '';
+					$option .= "<option value=\"$d[value]\" $selected>$d[name]</option>";
 				}
 			}
 			return "<div class=\"form-group m-form__group\">
                 <label>
                     $label
-                </label>
-				<select class=\"form-control m-input m-input--pill\" id=\"$name\" name=\"$id\" $varmultiple>
+                </label><br/>
+				<select name=\"$name\" id=\"$name\" $add>
 					$option
 				</select>
             </div>";
 		}
-
 		#SELECT
 		public static function defaultSelect($label, $data = null, $name, $value = '', $add=''){
 			$option = '';
@@ -344,38 +344,38 @@
 		#SUBMIT
 		public static function formSubmit($label, $name, $icon=null){
 			$icon = $icon ? "<i class=\"$icon\"></i>" : "";
-			return "<div class=\"form-group m-form__group\">
-						<button id=\"$name\" class=\"btn btn-success m-btn m-btn--custom m-btn--icon m-btn--air m-btn--pill btn-sm pull-right\">
-							<span>
-								$icon
-								<span id=\"label-$name\">
-									$label
-								</span>
-							</span>
-						</button>
-					</div>
-					<br/><br/>";
+			// return "<div class=\"form-group m-form__group\">
+			// 			<button id=\"$name\" class=\"btn btn-success m-btn m-btn--custom m-btn--icon m-btn--air m-btn--pill btn-sm pull-right\">
+			// 				<span>
+			// 					$icon
+			// 					<span id=\"label-$name\">
+			// 						$label
+			// 					</span>
+			// 				</span>
+			// 			</button>
+			// 		</div>
+			// 		<br/><br/>";
+			return "<div class=\"pull-right\"><button type=\"submit\" id=\"$name\" class=\"btn btn-primary\"><span id=\"label-$name\">$icon $label</span></button></div><br/><br/>";
 		}
 
 		public static function breadcrumb($data){
 			$view ='';
 			foreach($data as $bc):
-			$view .= "<li class=\"separator\">
-						<i class=\"flaticon-right-arrow\"></i>
-					</li>
-					<li class=\"nav-item\">
-						<a href=\"$bc[link]\">$bc[title]</a>
-					</li>";
+				if($bc['link'] == '#' || !isset($bc['link'])):
+					$view .= "<li class=\"breadcrumb-item active\" aria-current=\"page\">$bc[title]</li>";
+				else:
+					$view .= "<li class=\"breadcrumb-item\"><a href=\"$bc[link]\">$bc[title]</a></li>";
+				endif;
 			endforeach;
-			
-			return "<ul class=\"breadcrumbs\">
-						<li class=\"nav-home\">
-							<a href=\"".url('')."\">
-								<i class=\"flaticon-home\"></i>
-							</a>
-						</li>
-						$view
-					</ul>";
+			return "<nav class=\"mB-30\" aria-label=\"breadcrumb\">
+				<ol class=\"breadcrumb\">
+					<li class=\"breadcrumb-item\"><a href=\"".url('')."\">Home</a></li>
+					$view
+				</ol>";
+		}
+		public static function title($title){
+			return "<h4 class=\"c-grey-900 mT-10\">$title</h4>";
+
 		}
 		/* =============== */
 
@@ -383,12 +383,16 @@
 			return url(Request::segment(1).'/'.$path);
 		}
 
+		public static function apiUrl($path=''){
+			return url('api/'.$path);
+		}
+
 		/**
 		 * MODEL
 		 */
 
-		public static function getPenyedia(){
-			$data = DB::table('m_penyedia');
+		public static function getAlat(){
+			$data = DB::table('m_alat');
 			return $data;
 		}
 
@@ -598,5 +602,52 @@
 
 		public static function rupiah_format($nilai){
 			return 'Rp. '.number_format($nilai,2);
+		}
+
+		public static function createLog($errors, $note = null,  $type = 'info'){
+			$ip      = Request::ip();
+			$input   = json_encode(Request::input());
+			$url     = Request::url();
+			$message = is_array($errors) ? json_encode($errors) : $errors;
+			$user    = Auth::user() ? Auth::user()->username : '';
+			$method  = Request::getMethod();
+			$text    = "[IP: ". $ip. "] [USER: ".$user."] [URL: ".$url."] [METHOD: ".$method."] [PARAMETER: ".$input."] [MESSAGE: ".$message."] [KETERANGAN: ".$note."]";
+
+			switch ($type) {
+				case 'info':
+					Log::info($text);
+					break;
+
+				case 'emergency':
+					Log::emergency($text);
+					break;
+					
+				case 'alert':
+					Log::alert($text);
+					break;
+
+				case 'critical':
+					Log::critical($text);
+					break;
+
+				case 'error':
+					Log::error($text);
+				break;
+
+				case 'warning':
+					Log::warning($text);
+					break;
+
+				case 'notice':
+					Log::notice($text);
+					break;
+					
+				case 'debug':
+					Log::debug($text);
+					break;
+				default:
+					# code...
+					break;
+			}
 		}
     }
