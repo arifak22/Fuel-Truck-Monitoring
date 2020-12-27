@@ -53,13 +53,28 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="{{url('style.css')}}">
+    <link rel="stylesheet" href="{{url('assets')}}/select2/css/select2.min.css">
+    <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"  rel="stylesheet">
+    
     <link rel="stylesheet" href="{{url('assets')}}/_custom/css/style.css"> 
-	<script src="{{url('assets')}}/js/core/jquery.3.2.1.min.js"></script>
+    <link rel="stylesheet" href="{{url('assets')}}/datetimepicker/css/bootstrap-datetimepicker.min.css">
+    
+    <script src="{{url('assets')}}/js/core/jquery.3.2.1.min.js"></script>
     <script src="{{url('assets')}}/js/plugin/sweetalert/sweetalert.min.js"></script>
     <script src="{{url('assets')}}/js/plugin/jquery.validate.min.js"></script> 
     <script src="{{url('assets')}}/js/plugin/jquery.form.min.js"></script> 
     <script src="{{url('assets')}}/_custom/js/script.js"></script> 
+      
+    
+    <script type="text/javascript" src="{{url('vendor.js')}}"></script>
+    <script type="text/javascript" src="{{url('bundle.js')}}"></script>
+
+    <script src="{{url('assets')}}/js/plugin/datatables/datatables.min.js"></script>
+    <script src="{{url('assets')}}/select2/js/select2.full.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/locale/id.js"></script>
+    <script src="{{url('assets')}}/datetimepicker/js/bootstrap-datetimepicker.min.js"></script> 
+    <link rel="stylesheet" href="{{url('assets')}}/datetimepicker/css/bootstrap-datetimepicker-standalone.css">
   </head>
   <body class="app">
     <div id='loader'>
@@ -374,7 +389,45 @@
       </div>
     </div>
   </body>
-  
-  <script type="text/javascript" src="{{url('vendor.js')}}"></script>
-  <script type="text/javascript" src="{{url('bundle.js')}}"></script>
+  <script>
+  $(".sidebar .sidebar-menu li a").on("click", function () {
+    var t = $(this);
+    t.parent().hasClass("open")
+        ? t
+              .parent()
+              .children(".dropdown-menu")
+              .slideUp(200, function () {
+                  t.parent().removeClass("open");
+              })
+        : (t.parent().parent().children("li.open").children(".dropdown-menu").slideUp(200),
+          t.parent().parent().children("li.open").children("a").removeClass("open"),
+          t.parent().parent().children("li.open").removeClass("open"),
+          t
+              .parent()
+              .children(".dropdown-menu")
+              .slideDown(200, function () {
+                  t.parent().addClass("open");
+              }));
+}),
+    $(".sidebar")
+        .find(".sidebar-link")
+        .each(function (t, i) {
+            $(i).removeClass("active");
+        })
+        .filter(function () {
+            var t = $(this).attr("href");
+            return ("/" === t[0] ? t.substr(1) : t) === window.location.pathname.substr(1);
+        })
+        .addClass("active"),
+    $(".sidebar-toggle").on("click", function (t) {
+        $(".app").toggleClass("is-collapsed"), t.preventDefault();
+    }),
+    $("#sidebar-toggle").click(function (t) {
+        t.preventDefault(),
+            setTimeout(function () {
+                window.dispatchEvent(window.EVENT);
+            }, 300);
+    });
+
+  </script>
 </html>

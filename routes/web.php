@@ -13,9 +13,12 @@
 use App\Helpers\Sideveloper;
 
 Route::get('/', function () {
-    return view('welcome');
+	return redirect('/home');
 });
 
 Route::post('login', [ 'as' => 'login', 'uses' => 'LoginController@getIndex']);
 Sideveloper::routeController('/login','Auth\LoginController');
-Sideveloper::routeController('/home','HomeController');
+Route::middleware(['auth', 'access'])->group(function () {
+    Sideveloper::routeController('/home','HomeController');
+    Sideveloper::routeController('/transaksi','TransaksiController');
+});

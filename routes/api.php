@@ -16,3 +16,10 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+use App\Helpers\Sideveloper;
+Sideveloper::routeController('/auth','Api\AuthController');
+
+Route::middleware(['jwt.verify'])->group(function () {
+    Sideveloper::routeController('/transaksi','Api\TransaksiController');
+    Sideveloper::routeController('/master-alat','Api\MasterAlatController');
+});
