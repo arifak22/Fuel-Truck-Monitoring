@@ -110,8 +110,8 @@ class MiddleController extends Controller
             $result = array();
             $message = $validator->errors();
             
-            // if(!$callback)
-            // Pel::createLog($message, 'VALIDATOR', 'warning');
+            if(!$callback)
+            Sideveloper::createLog($message, 'VALIDATOR', 'warning');
 
             $result['api_status']  = 0;
             $result['api_code']    = 101;
@@ -126,8 +126,8 @@ class MiddleController extends Controller
             $result = array();
             $message = $validator->errors();
             
-            // if(!$callback)
-            // Pel::createLog($message, 'VALIDATOR', 'warning');
+            if(!$callback)
+            Sideveloper::createLog($message, 'VALIDATOR', 'warning');
 
             $result['api_status']  = 0;
             $result['api_code']    = 101;
