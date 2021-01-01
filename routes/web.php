@@ -21,4 +21,5 @@ Sideveloper::routeController('/login','Auth\LoginController');
 Route::middleware(['auth', 'access'])->group(function () {
     Sideveloper::routeController('/home','HomeController');
     Sideveloper::routeController('/transaksi','TransaksiController');
+    Sideveloper::routeController('/master','MasterController');
 });

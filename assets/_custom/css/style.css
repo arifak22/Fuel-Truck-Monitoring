@@ -49,3 +49,10 @@
   border: none!important;
   background-color: transparent!important;
 }
+
+.redClass{
+  background-color: #f44336!important;
+}
+.redClass i{
+  color: white!important;
+}

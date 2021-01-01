@@ -21,5 +21,5 @@ Sideveloper::routeController('/auth','Api\AuthController');
 
 Route::middleware(['jwt.verify'])->group(function () {
     Sideveloper::routeController('/transaksi','Api\TransaksiController');
-    Sideveloper::routeController('/master-alat','Api\MasterAlatController');
+    Sideveloper::routeController('/master','Api\MasterController');
 });

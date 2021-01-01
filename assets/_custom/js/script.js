@@ -151,3 +151,7 @@ function round(num, decimalPlaces = 0) {
     var m = (num * p) * (1 + Number.EPSILON);
     return Math.round(m) / p;
 }
+
+function select(options, selected) {
+    return Object.entries(options).reduce((r, [k, v]) => r.append($('<option>').val(k).text(v)), $('<select class="form-control">')).val(selected);
+}
