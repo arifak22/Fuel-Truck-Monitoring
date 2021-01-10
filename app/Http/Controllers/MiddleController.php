@@ -19,7 +19,7 @@ use Storage;
 use Schema;
 use Validator;
 use Sideveloper;
-
+use Carbon;
 /**
  * 
  * RESPONE CATATAN
@@ -30,6 +30,12 @@ use Sideveloper;
  */
 class MiddleController extends Controller
 {
+    
+    public function __construct()
+    {
+        setlocale(LC_TIME, 'id_ID');
+        Carbon::setLocale('id');
+    }
     public $validator = [];
     public $valid     = true;
     public $respone   = null;
