@@ -93,10 +93,7 @@
             <div class="peers ai-c jc-sb fxw-nw">
               <div class="peer">
                 <div class="checkbox checkbox-circle checkbox-info peers ai-c">
-                  {{-- <input type="checkbox" id="inputCall1" name="inputCheckboxesCall" class="peer">
-                  <label for="inputCall1" class=" peers peer-greed js-sb ai-c">
-                    <span class="peer peer-greed">Remember Me</span>
-                  </label> --}}
+                    <a class="peer peer-greed">Lupa Password ?</a>
                 </div>
               </div>
               <div class="peer">
