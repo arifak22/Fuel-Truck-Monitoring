@@ -344,18 +344,16 @@
 		#SUBMIT
 		public static function formSubmit($label, $name, $icon=null){
 			$icon = $icon ? "<i class=\"$icon\"></i>" : "";
-			// return "<div class=\"form-group m-form__group\">
-			// 			<button id=\"$name\" class=\"btn btn-success m-btn m-btn--custom m-btn--icon m-btn--air m-btn--pill btn-sm pull-right\">
-			// 				<span>
-			// 					$icon
-			// 					<span id=\"label-$name\">
-			// 						$label
-			// 					</span>
-			// 				</span>
-			// 			</button>
-			// 		</div>
-			// 		<br/><br/>";
 			return "<div class=\"pull-right\"><button type=\"submit\" id=\"$name\" class=\"btn btn-primary\"><span id=\"label-$name\">$icon $label</span></button></div><br/><br/>";
+		}
+
+		#CANCEL
+		public static function formSubmit2($label, $name, $icon=null){
+			$icon = $icon ? "<i class=\"$icon\"></i>" : "";
+			return "<div class=\"pull-right\">
+			<button type=\"button\" id=\"cancel-$name\" class=\"btn btn-light\"><span id=\"label-cancel-$name\">Cancel</span></button>
+			<button type=\"submit\" id=\"$name\" class=\"btn btn-primary\"><span id=\"label-$name\">$icon $label</span></button>
+			</div><br/><br/>";
 		}
 
 		public static function breadcrumb($data){
@@ -419,6 +417,19 @@
 				$data->where('id_dinas', Auth::user()->id_dinas);
 
 			return $data;
+		}
+
+		public static function getReport($id_alat, $start, $end){
+			$query = DB::table('transaksi')
+            ->select('id', 'm_alat.nama as nama_alat', 'tanggal','bbm_level','gps')
+            ->join('m_alat', 'm_alat.id_alat', '=', 'transaksi.id_alat');
+
+			$query->whereBetween('tanggal', [$start, $end]);
+
+			if($id_alat)
+				$query->where('transaksi.id_alat', $id_alat);
+
+			return $query;
 		}
 
 		/**
@@ -649,5 +660,44 @@
 					# code...
 					break;
 			}
+		}
+		public static function dmsTodecimal($dms, $EastingAndNorthing)
+		{
+			$split = preg_split("/\./", $dms);
+			$strLength = strlen($split[0]);
+			if($strLength == 4)
+			{
+				// lat
+				$d = substr($dms, 0, 2);
+				$m = substr($dms, 2, 2);
+				$s = "0." . $split[1];
+			}
+			else if($strLength == 5)
+			{
+				// long
+				$d = substr($dms, 0, 3);
+				$m = substr($dms, 3, 2);
+				$s = "0." . $split[1];
+			}
+			else
+			{
+				throw new Exception("Invalid DMS format for '$dms'");    
+			}
+			
+			$dec = $d + ($m/60) + (($s*60)/3600);
+			
+			if((strncmp($EastingAndNorthing, "S", 1) == 0) || (strncmp($EastingAndNorthing, "W", 1) == 0))
+			{
+				$dec = -1 * $dec;
+			}
+			
+			return $dec;
+		}
+
+		public static function parseNMEA($nmea){
+			$exp = explode(',', $nmea);
+			$result['lat'] = self::dmsTodecimal($exp[2], $exp[3]);
+			$result['lng'] = self::dmsTodecimal($exp[4], $exp[5]);
+			return $result;
 		}
     }
