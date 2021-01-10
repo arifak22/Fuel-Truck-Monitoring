@@ -14,8 +14,7 @@
                                 {!!Sideveloper::formInput('Waktu', 'text', 'tanggal', date('Y-m-d H:i:s'))!!}
                             </div>
                             <div class="col-md-6">
-                                {!!Sideveloper::formInput('BBM Level', 'number', 'bbm_level')!!}
-                                {!!Sideveloper::formText('GPS', 'gps')!!}
+                                {!!Sideveloper::formInput('Box', 'number', 'box')!!}
                             </div>
                         </div>
                         {!!Sideveloper::formSubmit2('Simpan', 'submit')!!}
@@ -33,8 +32,7 @@
                             <th>Aksi</th>
                             <th>Nama Alat</th>
                             <th>Tanggal</th>
-                            <th>BBM Level</th>
-                            <th width="100px">Lokasi</th>
+                            <th>Box</th>
                         </tr>
                     </thead>
                     <tfoot>
@@ -42,8 +40,7 @@
                             <th>Filter</th>
                             <th>Nama Alat</th>
                             <th>Tanggal</th>
-                            <th>BBM Level</th>
-                            <th>Lokasi</th>
+                            <th>Box</th>
                         </tr>
                     </tfoot>
                     <tbody>
@@ -70,13 +67,9 @@
                 tanggal: {
                     required: true,
                 },
-                bbm_level: {
+                box: {
                     required: true,
                     min     : 0,
-                },
-                gps: {
-                    required: true,
-                    maxlength: 500,
                 },
             }
         });
@@ -85,7 +78,7 @@
         }
         apiLoading(true, btn);
         form.ajaxSubmit({
-            url    : "{{Sideveloper::apiUrl('transaksi/insert')}}",
+            url    : "{{Sideveloper::apiUrl('transaksi/box-insert')}}",
             data   : { _token: "{{ csrf_token() }}" },
             headers: {
                 "Authorization": "Bearer " + localStorage.getItem('jwt_token')
@@ -128,14 +121,14 @@
         pageLength   : 10,
         order        : [[2,'desc']],
         ajax         : {
-            url  : "{{Sideveloper::apiUrl('transaksi/list')}}",
+            url  : "{{Sideveloper::apiUrl('transaksi/box-list')}}",
             type : "get",   
             headers: {
                 "Authorization": "Bearer " + localStorage.getItem('jwt_token')
             },
             error: function(){ 
                 $(".employee-grid-error").html("");
-                $("#data-list").append('<tbody class="employee-grid-error"><tr><th colspan="5"><center>Internal Server Error</center></th></tr></tbody>');
+                $("#data-list").append('<tbody class="employee-grid-error"><tr><th colspan="4"><center>Internal Server Error</center></th></tr></tbody>');
                 $("#data-list_processing").css("display","none");
             }
         },
@@ -143,8 +136,7 @@
             { "data" : "id" },
             { "data" : "nama_alat", "name" : "m_alat.nama" },
             { "data" : "tanggal" },
-            { "data" : "bbm_level" },
-            { "data" : "gps" },
+            { "data" : "box" },
         ],
         initComplete: function () {
             this.api().columns().every(function () {
@@ -189,7 +181,7 @@
         apiLoading(true);
         $.ajax({
             method: "GET",
-            url  : "{{Sideveloper::apiUrl('transaksi/filter')}}",
+            url  : "{{Sideveloper::apiUrl('transaksi/box-filter')}}",
             headers: {
                 "Authorization": "Bearer " + localStorage.getItem('jwt_token')
             },
@@ -200,9 +192,8 @@
             $("#id").val(res.data.id);
             $("#tipe").val(2);
             $("#id_alat").val(res.data.id_alat).trigger('change');
-            $("#bbm_level").val(res.data.bbm_level);
             $("#tanggal").val(res.data.tanggal);
-            $("#gps").val(res.data.gps);
+            $("#box").val(res.data.box);
             $("#label-submit").html('Ubah');
             window.scrollTo(0,0);
         })
@@ -227,7 +218,7 @@
                 apiLoading(true);
                 $.ajax({
                     method: "POST",
-                    url: "{{Sideveloper::apiUrl('transaksi/delete')}}",
+                    url: "{{Sideveloper::apiUrl('transaksi/box-delete')}}",
                     headers: {
                         "Authorization": "Bearer " + localStorage.getItem('jwt_token')
                     },
