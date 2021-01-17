@@ -58,6 +58,13 @@ class LoginController extends Controller
         $credentials = Request::only('username', 'password');
 
         if (Auth::attempt($credentials)) {
+            if(Auth::user()->status == 0){
+                Auth::logout();
+                $res['api_status']  = 0;
+                $res['api_message'] = 'User anda sudah dinonaktifkan';
+                return response()->json($res);
+            }
+            
             // Authentication passed...
             $res['api_status']  = 1;
             $res['api_message'] = 'Berhasil Login';
