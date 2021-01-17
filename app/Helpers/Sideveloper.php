@@ -667,6 +667,7 @@
 			$strLength = strlen($split[0]);
 			if($strLength == 4)
 			{
+				// 0656.19158071924282
 				// lat
 				$d = substr($dms, 0, 2);
 				$m = substr($dms, 2, 2);
@@ -683,7 +684,7 @@
 			{
 				throw new Exception("Invalid DMS format for '$dms'");    
 			}
-			
+			// echo $d . ' -- '. $m. ' -- '.$s;die();
 			$dec = $d + ($m/60) + (($s*60)/3600);
 			
 			if((strncmp($EastingAndNorthing, "S", 1) == 0) || (strncmp($EastingAndNorthing, "W", 1) == 0))
@@ -692,6 +693,44 @@
 			}
 			
 			return $dec;
+		}
+		public static function beliefmedia_dec_dms($dec) {
+			$vars = explode('.', $dec);
+			// -6.938893922629532
+			//-0938893922629532
+			$deg = $vars[0];
+			$tempma = '0.' . $vars[1];
+			$tempma = $tempma * 3600;
+			$min = strval($tempma / 60);
+			$sec = explode('.',$min)[1];
+			$sec2 = $tempma - (floor($tempma / 60)) ;
+			return array('deg' => $deg, 'min' => $min, 'sec' => $sec, 'sec2' => $sec2);
+		}
+		public static function decimalTodms($lat, $lng){
+			$latpos = (strpos($lat, '-') !== false) ? 'S' : 'N';
+			$lat = self::beliefmedia_dec_dms($lat);
+			$lngpos = (strpos($lng, '-') !== false) ? 'W' : 'E';
+			$lng = self::beliefmedia_dec_dms($lng);
+			// return $lat;
+			if(strlen($lat['min'])<2){
+				$latmin = '0'.$lat['min'];
+			}else{
+				$latmin = $lat['min'];
+			}
+			if(strlen($lng['min'])<2){
+				$lngmin = '0'.$lng['min'];
+			}else{
+				$lngmin = $lng['min'];
+			}
+			$latp = sprintf("%02d", abs($lat['deg'])).$latmin;
+			$lngp = sprintf("%03d", abs($lng['deg'])).$lngmin;
+			// return $lat;
+			// '$GPGGA,181908.00,33524.2600000000002,S,1511226.352,E,4,13,1.00,495.144,M,29.200,M,0.10,0000*40';
+			// '$GPGGA,181908.00,3404.7041778,N,07044.3966270,W,4,13,1.00,495.144,M,29.200,M,0.10,0000*40';
+			// $GPGGA,181908.00,0656.18,S,110025.29,E,4,13,1.00,495.144,M,29.200,M,0.10,0000*40
+			// $GPGGA,181908.00,656.19,S,11025.28,E,4,13,1.00,495.144,M,29.200,M,0.10,0000*40
+			return '$GPGGA'.",181908.00,$latp,$latpos,$lngp,$lngpos,4,13,1.00,495.144,M,29.200,M,0.10,0000*40";
+			// return $latpos . abs($lat['deg']) . '&deg;' . $lat['min'] . '&apos;' . $lat['sec'] . '&quot ' . $lngpos . abs($lng['deg']) . '&deg;' . $lng['min'] . '&apos;' . $lng['sec'] . '&quot';
 		}
 
 		public static function parseNMEA($nmea){

@@ -65,6 +65,21 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+      /* .table-responsive {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        -ms-overflow-style: -ms-autohiding-scrollbar; 
+      }*/
+      
+      .mapboxgl-popup-content{
+          padding: 20;
+          width: 280px;
+      }
+      .marker{
+          color: black;
+      }
     </style>
     <link rel="stylesheet" href="{{url('assets')}}/select2/css/select2.min.css">
     <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"  rel="stylesheet">
@@ -117,7 +132,7 @@
                   <div class="peers ai-c fxw-nw">
                     <div class="peer">
                       <div class="logo">
-                        <img src="assets/static/images/logo.png" alt="">
+                        <img src="{{url('assets/static/images/logo.png')}}" alt="">
                       </div>
                     </div>
                     <div class="peer peer-greed">

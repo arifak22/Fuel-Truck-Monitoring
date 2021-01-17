@@ -63,6 +63,17 @@ class TransaksiController extends MiddleController
         return datatables()->of($query)->toJson();
     }
 
+    public function postParseNmea(){
+        $latitude  = $this->input('latitude');
+        $longitude = $this->input('longitude');
+        $parse = Sideveloper::decimalTodms($latitude, $longitude);
+        
+        #BERHASIL
+        $res['api_status'] = 1;
+        $res['parse']      = $parse;
+        return $this->api_output($res);
+    }
+
     #Insert / Update Data
     public function postInsert(){
         $id        = $this->input('id');
@@ -121,10 +132,12 @@ class TransaksiController extends MiddleController
                 $nilai_transaksi = $bbm_level;
                 $status          = 'IN';
             }
-            $save_log['id_trans']   = $getId;
-            $save_log['tanggal']    = $tanggal;
-            $save_log['nilai']      = $nilai_transaksi;
-            $save_log['status']     = $status;
+            $save_log['id_trans'] = $getId;
+            $save_log['tanggal']  = $tanggal;
+            $save_log['nilai']    = $nilai_transaksi;
+            $save_log['status']   = $status;
+            $save_log['id_alat']  = $id_alat;
+            $save_log['periode']  = date('Ym');
             DB::table('transaksi_log')->insert($save_log);
             
             $res['api_message'] = 'Berhasil Ditambahkan';
@@ -408,18 +421,31 @@ class TransaksiController extends MiddleController
     
 
     public function getLokasiLast(){
+        $id = $this->input('id');
+        if($id){
+            $filter  = DB::table('transaksi')->where('id', $id)->first();
+            $tanggal = Sideveloper::defaultDate($filter->tanggal);
+            $where   = "a.tanggal = '$filter->tanggal' and a.id_alat = $filter->id_alat";
+            $where2   = "b.tanggal <= '$filter->tanggal' and b.id_alat = $filter->id_alat order by b.tanggal desc limit 1";
+            $where3  = "date(c.tanggal) = $tanggal and c.id_alat = $filter->id_alat";
+            $tanggal_box = Sideveloper::date($tanggal);
+        }else{
+            $where = "a.tanggal = (select max(aa.tanggal) from transaksi as aa where aa.id_alat = a.id_alat)";
+            $where2 = "b.tanggal = (select max(bb.tanggal) from hourmeter as bb where bb.id_alat = b.id_alat)";
+            $where3 = "date(c.tanggal) = CURDATE()";
+            $tanggal_box = 'Hari ini';
+        }
         $last_data = DB::select(DB::raw("
             select m_alat.id_alat, m_alat.nama, m_alat.kode_alat, ta.bbm_level, ta.gps, ta.tanggal as tanggal_bbm, 
-            tb.hour_meter, tb.tanggal as tanggal_hm, tc.box, CURDATE() tanggal_box
+            ifnull(tb.hour_meter, 0) hour_meter, tb.tanggal as tanggal_hm, tc.box, CURDATE() tanggal_box
             from m_alat
             join(select bbm_level, gps, tanggal, a.id_alat from transaksi a 
-            where a.tanggal = (select max(aa.tanggal) from transaksi as aa where aa.id_alat = a.id_alat)) as ta 
+            where $where) as ta 
             on ta.id_alat = m_alat.id_alat
             left join(
-            select hour_meter, tanggal, id_alat from hourmeter b where 
-            tanggal = (select max(bb.tanggal) from hourmeter as bb where bb.id_alat = b.id_alat)) as tb
+            select hour_meter, tanggal, id_alat from hourmeter b where $where2) as tb
             on tb.id_alat = m_alat.id_alat
-            left join(select sum(box) box, id_alat from box c where date(c.tanggal) = CURDATE()
+            left join(select sum(box) box, id_alat from box c where $where3
             GROUP BY id_alat) tc 
             on tc.id_alat = m_alat.id_alat"
         ));
@@ -433,11 +459,11 @@ class TransaksiController extends MiddleController
                 $data[$key]['nama']        = $ld->nama;
                 $data[$key]['kode_alat']   = $ld->kode_alat;
                 $data[$key]['bbm_level']   = $ld->bbm_level;
-                $data[$key]['tanggal_bbm'] = Sideveloper::dateFull($ld->tanggal_bbm);
+                $data[$key]['tanggal_bbm']  = $ld->tanggal_bbm ? Sideveloper::dateFull($ld->tanggal_bbm) : '';
                 $data[$key]['hour_meter']  = $ld->hour_meter;
-                $data[$key]['tanggal_hm']  = Sideveloper::dateFull($ld->tanggal_hm);
+                $data[$key]['tanggal_hm']  = $ld->tanggal_hm ? Sideveloper::dateFull($ld->tanggal_hm) : '';
                 $data[$key]['box']         = $ld->box;
-                $data[$key]['tanggal_box'] = 'Hari ini';
+                $data[$key]['tanggal_box'] = $tanggal_box;
             endforeach;
         }
         #BERHASIL
@@ -445,6 +471,63 @@ class TransaksiController extends MiddleController
         $res['api_message'] = 'Filter';
         $res['data']        = $data;
         return $this->api_output($res);
+    }
+
+    #List Data
+    public function getSummaryReport(){
+        $datatable    = $this->input('draw') ?  true : false;
+        $id_alat      = $this->input('id_alat');
+        $tipe_laporan = $this->input('tipe_laporan');
+        $start_date   = $this->input('start_date').' 00:00:00';
+        $end_date     = $this->input('end_date').' 23:59:59';
+        $start_month  = $this->input('start_month').'-01'.' 00:00:00';
+        $end_month    = date('Y-m-t', strtotime($this->input('end_month').'-28')).' 23:59:59';
+        
+        $start = $tipe_laporan == '1' ? $start_date : $start_month;
+        $end   = $tipe_laporan == '1' ? $end_date : $end_month;
+        $waktu = '';
+        $waktu   = "AND TANGGAL BETWEEN '$start' and '$end'";
+        $prepare = [];
+        $where = '';
+        if($id_alat){
+            $where .= "AND a.id_alat = :id_alat";
+            $prepare['id_alat'] = $id_alat;
+        }
+        $query = DB::select(DB::raw("SELECT a.id_alat, a.nama as nama_alat, IFNULL(round(b.konsumsi_bbm,2), 0) konsumsi_bbm, IFNULL(c.total_box, 0) total_box, 
+            IFNULL(round(d.selisih_hourmeter, 2), 0) selisih_hourmeter
+            from m_alat a
+            LEFT JOIN(
+                SELECT sum(nilai) konsumsi_bbm, id_alat FROM transaksi_log where 
+                status = 'OUT' $waktu
+                GROUP BY id_alat
+            ) b ON a.id_alat = b.id_alat
+            LEFT JOIN(
+                SELECT sum(box) total_box, id_alat FROM box 
+                where 1=1  $waktu
+                GROUP BY id_alat
+            ) c ON a.id_alat = c.id_alat
+            LEFT JOIN(
+                SELECT A.id_alat,(B.hour_meter-C.hour_meter) selisih_hourmeter FROM ( SELECT id_alat,
+                MAX(tanggal) maximum,MIN(tanggal) minimum FROM hourmeter 
+                where 1=1 $waktu
+                GROUP BY id_alat ) A
+                LEFT JOIN hourmeter B ON B.tanggal = A.maximum
+                LEFT JOIN hourmeter C ON C.tanggal = A.minimum
+            ) d ON a.id_alat = d.id_alat
+            WHERE 1=1 $where
+            "
+
+        ), $prepare);
+        if($datatable)
+        return datatables()->of($query)->toJson();
+    }
+
+    public function postProccessKonsumsi(){
+        $periode = $this->input('periode', $periode);
+        $tahun = substr($periode, 0, 4);
+        $bulan = substr($periode, 5, 2);
+        // $data = DB::table($this->table)
+        //     ->whereYear()
     }
 
 

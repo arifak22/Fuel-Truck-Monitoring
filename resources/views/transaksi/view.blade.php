@@ -15,7 +15,10 @@
                             </div>
                             <div class="col-md-6">
                                 {!!Sideveloper::formInput('BBM Level', 'number', 'bbm_level')!!}
-                                {!!Sideveloper::formText('GPS', 'gps')!!}
+                                <div class="form-group m-form__group"> 
+                                    <label><button id="getLocation" onclick="openMap()"type="button" class="btn btn-sm btn-primary">Get Lokasi</button></label> 
+                                    <textarea class="form-control" name="gps" id="gps" ></textarea> 
+                                </div>
                             </div>
                         </div>
                         {!!Sideveloper::formSubmit2('Simpan', 'submit')!!}
@@ -53,7 +56,75 @@
         </div>
     </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">MAP</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id='map' style='width: 100%; height: 450px;'></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" onclick="submitLokasi()" class="btn btn-info">Submit</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+        </div>
+    </div>
+</div>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.js'></script>
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.css' rel='stylesheet' />
 <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpZmFrMjIiLCJhIjoiY2tqZWhwbDVuNXE1ODJ4cWo4dTF2MW1wbiJ9.tZk1uItNZtO-6dgydQxjfg';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        bearing: 90,
+        style: 'mapbox://styles/mapbox/satellite-v9', // stylesheet location
+        // center: [110.42491207584106, -6.938581241192438], // starting position [lng, lat]
+        center: [110.42491207584106, -6.938581241192438], // starting position [lng, lat]
+        zoom: 16.6 // starting zoom
+    });
+    function openMap(){
+        $("#exampleModal").modal('show');
+    }
+    var marker = new mapboxgl.Marker();
+    var position = null;
+    map.on('click', function(e){
+        marker.remove();
+        marker = new mapboxgl.Marker()
+            .setLngLat([e.lngLat.lng, e.lngLat.lat])
+            .addTo(map);
+        position = e.lngLat;
+        console.log(position);
+    });
+    $('#exampleModal').on('shown.bs.modal', function() {
+        map.resize();
+    });
+    function submitLokasi(){
+        if(!position)
+            swal('Set Lokasi dahulu');
+
+        $.ajax({
+            method: "POST",
+            url  : "{{Sideveloper::apiUrl('transaksi/parse-nmea')}}",
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem('jwt_token')
+            },
+            data: { _token: "{{ csrf_token() }}", latitude: position.lat, longitude: position.lng }
+        })
+        .done(function(res) {
+            $("#gps").val(res.parse);
+            $("#exampleModal").modal('hide');
+        });
+    }
+
+
     $('#id_alat').select2();
     $('#tanggal').datetimepicker({
         format: 'YYYY-MM-DD HH:mm:ss'

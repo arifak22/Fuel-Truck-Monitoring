@@ -12,23 +12,13 @@
         </div>
     </div>
 </div>
-
-<style>
-    .mapboxgl-popup-content{
-        padding: 20;
-        width: 280px;
-    }
-    .marker{
-        color: black;
-    }
-    </style>
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpZmFrMjIiLCJhIjoiY2tqZWhwbDVuNXE1ODJ4cWo4dTF2MW1wbiJ9.tZk1uItNZtO-6dgydQxjfg';
     var map = new mapboxgl.Map({
         container: 'map',
         bearing: 90,
         style: 'mapbox://styles/mapbox/satellite-v9', // stylesheet location
-        center: [{{Sideveloper::parseNMEA($test->gps)['lng']}}, {{Sideveloper::parseNMEA($test->gps)['lat']}}], // starting position [lng, lat]
+        center: [110.42491207584106, -6.938581241192438], // starting position [lng, lat]
         zoom: 16.6 // starting zoom
     });
     
@@ -46,15 +36,15 @@
                 var oImg = document.createElement("img");
                 oImg.setAttribute('src', '{{url('assets/_custom/img/truck.png')}}');
                 oImg.setAttribute('alt', 'na');
-                oImg.setAttribute('height', '45px');
-                oImg.setAttribute('width', '45px');
-                oImg.setAttribute('style', 'margin-top:-5px');
+                oImg.setAttribute('height', '35px');
+                oImg.setAttribute('width', '35px');
+                oImg.setAttribute('style', 'margin-top:-6px');
                 oImg.addEventListener('click', function () {
                     openTab(element);
                 });
                 var el = document.createElement("center");
                 el.className = 'marker';
-                el.innerHTML = '<b>'+element.kode_alat+'</b><br>';
+                el.innerHTML = '<b style="-webkit-text-stroke: 0.2px white;">'+element.kode_alat+'</b><br>';
                 el.appendChild(oImg);
                 new mapboxgl.Marker(el)
                     .setLngLat([element.lng, element.lat])

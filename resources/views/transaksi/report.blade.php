@@ -36,19 +36,41 @@
     <div class="row">
         <div class="col-md-12">
             <div class="bgc-white bd bdrs-3 p-20 mB-20">
-                <table id="table-list" class="table table-striped table-bordered" cellspacing="0" width="100%">
-                    <thead>
-                        <tr>
-                            <th>Nama Alat</th>
-                            <th>Tanggal</th>
-                            <th>BBM Level</th>
-                            <th width="100px">Lokasi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table id="table-list" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                        <thead>
+                            <tr>
+                                <th width="20px">Map</th>
+                                <th>Nama Alat</th>
+                                <th>Tanggal</th>
+                                <th>BBM Level</th>
+                                <th width="100px">NMEA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
             </div>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">MAP</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id='map' style='width: 100%; height: 450px;'></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
         </div>
     </div>
 </div>
@@ -57,6 +79,9 @@
         display: none;
     }
 </style>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.js'></script>
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.css' rel='stylesheet' />
 <script>
     $(document).ready(function(){
         $("#bulanan").hide();
@@ -86,7 +111,7 @@
         processing   : true,
         serverSide   : true,
         bLengthChange: true,
-        bFilter      : true,
+        bFilter      : false,
         pageLength   : 10,
         order        : [[2,'desc']],
         ajax         : {
@@ -110,6 +135,7 @@
             }
         },
         columns : [
+            { "data" : "id" },
             { "data" : "nama_alat", "name" : "m_alat.nama" },
             { "data" : "tanggal" },
             { "data" : "bbm_level" },
@@ -132,18 +158,91 @@
         //         }
         //     });
         // },
-        // columnDefs: [
-        //     {
-        //         targets : 0,
-        //         orderable: false, 
-        //         data: "id",
-        //         render: function ( data, type, row, meta ) {
-        //             return ;
-        //         }
-        //     },
-        // ],
+        columnDefs: [
+            {
+                targets : 0,
+                orderable: false, 
+                data: "id",
+                render: function ( data, type, row, meta ) {
+                    return `
+                            <div class="form-button-action">
+                                <button class="aksi" onclick="openMap(${data})">
+                                    <span class="icon-holder"><i class="c-blue-500 ti-map"></i> </span>
+                                </button>
+                            </div>`;
+                }
+            },
+        ],
     });
-
+    
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpZmFrMjIiLCJhIjoiY2tqZWhwbDVuNXE1ODJ4cWo4dTF2MW1wbiJ9.tZk1uItNZtO-6dgydQxjfg';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        bearing: 90,
+        style: 'mapbox://styles/mapbox/satellite-v9', // stylesheet location
+        center: [110.42491207584106, -6.938581241192438], // starting position [lng, lat]
+        zoom: 16.6 // starting zoom
+    });
+    let mapMarkers = [];
+    function openMap(id){
+        mapMarkers.forEach((marker) => marker.remove())
+        mapMarkers = []
+        $.ajax({
+            method: "GET",
+            url  : "{{Sideveloper::apiUrl('transaksi/lokasi-last')}}",
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem('jwt_token')
+            },
+            data: { _token: "{{ csrf_token() }}", id: id }
+        })
+        .done(function(res) {
+            res.data.forEach(element => {
+                var oImg = document.createElement("img");
+                oImg.setAttribute('src', '{{url('assets/_custom/img/truck.png')}}');
+                oImg.setAttribute('alt', 'na');
+                oImg.setAttribute('height', '45px');
+                oImg.setAttribute('width', '45px');
+                oImg.setAttribute('style', 'margin-top:-5px');
+                oImg.addEventListener('click', function () {
+                    openTab(element);
+                });
+                var el = document.createElement("center");
+                el.className = 'marker';
+                el.innerHTML = '<b>'+element.kode_alat+'</b><br>';
+                el.appendChild(oImg);
+                const marker = new mapboxgl.Marker(el)
+                    .setLngLat([element.lng, element.lat])
+                    .addTo(map);
+                mapMarkers.push(marker);
+            });
+        })
+        $("#exampleModal").modal('show');
+    }
+    $('#exampleModal').on('shown.bs.modal', function() {
+        map.resize();
+    });
+    
+    function openTab(element){
+        new mapboxgl.Popup({ closeOnClick: false })
+            .setLngLat([element.lng, element.lat])
+            .setHTML(`<b style="font-size:16px">${element.nama}</b>
+                <ul style="padding-left:20px">
+                    <li>
+                        BBM Level ${element.bbm_level} <br>
+                        <i>(${element.tanggal_bbm})</i>
+                    </li>
+                    <li>
+                        Hour Meter ${element.hour_meter} <br>
+                        <i>(${element.tanggal_hm})</i>
+                    </li>
+                    <li>
+                        Box ${element.box ? element.box : 0} <br>
+                        <i>(${element.tanggal_box})</i>
+                    </li>
+                </ul>
+            `)
+            .addTo(map);
+    }
     function refreshReport(){
         tableList.ajax.reload();
     }

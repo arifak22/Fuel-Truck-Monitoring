@@ -158,4 +158,16 @@ class TransaksiController extends MiddleController
         header('Content-Disposition: attachment; filename="'.$title.'.xlsx"');
         $writer->save("php://output");
     }
+
+    
+
+    public function getSummaryReport(){
+        $data['title'] = 'Summary Report';
+        $data['breadcrumbs'] = [
+            ['link' => '#', 'title'=> $data['title']],
+        ];
+        $alat   = Sideveloper::getAlat()->get();
+        $data['alat'] = Sideveloper::makeOption($alat, 'id_alat', 'nama', true);
+        return Sideveloper::load('template', $this->view.'summary-report', $data);
+    }
 }
