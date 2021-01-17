@@ -49,13 +49,31 @@
 			return $config[$parameter];
 		}
 
-		public static function cekPpk(){
-			if(Auth::user()->id_privilege != 1){
-				return false;
-			}
-			return true;
-		}
+		public static function sendMail($subject, $tujuan, $data, $lampiran = null){
+			// if(url('') == 'http://localhost/laravel')
+			// return false;
+			
+			try{
+				Mail::send('email', $data, function ($message) use ($subject, $tujuan, $lampiran)
+				{
+					$message->subject($subject);
+					$message->from('donotreply@femos.com', 'Aplikasi Femos');
+					if($tujuan['to'])
+					$message->to($tujuan['to']);
 
+					if(@$tujuan['cc'])
+					$message->cc($tujuan['cc']);
+
+					if($lampiran)
+					$message->attach($lampiran);
+				});
+				return['status' => 1,'message' => 'success'];
+			}
+			catch (Exception $e){
+				self::createLog($e->getMessage(), null,  'error');
+				return ['status' => 0,'message' => $e->getMessage()];
+			}
+		}
 		public static function getPrivilege(){
 			if(Auth::user())
 			return DB::table('privileges')->where('id_privilege', Auth::user()->id_privilege)->value('nama_privilege');

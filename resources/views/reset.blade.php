@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>{{env('APP_NAME') . ' | Sign In'}}</title>
+    <title>{{env('APP_NAME') . ' | Reset Password'}}</title>
     <style>
       #loader {
         transition: all 0.3s ease-in-out;
@@ -79,47 +79,22 @@
         </div>
       </div>
       <div class="col-12 col-md-4 peer pX-40 pY-80 h-100 bgc-white scrollable pos-r login-page" style='min-width: 320px;'>
-        <h4 class="fw-300 c-grey-900 mB-40">Login</h4>
+        <h4 class="fw-300 c-grey-900 mB-40">Masukan Password Baru anda</h4>
         <form>
-          <div class="form-group">
-            <label class="text-normal text-dark">Username</label>
-            <input type="text" name="username" class="form-control" placeholder="Username">
-          </div>
+          <input type="hidden" name="id" class="form-control" value="{{Request::input('id')}}">
+          <input type="hidden" name="token" class="form-control" value="{{Request::input('token')}}">
           <div class="form-group">
             <label class="text-normal text-dark">Password</label>
-            <input type="password" name="password" class="form-control" placeholder="Password">
+            <input type="password" name="password_1" class="form-control pass1" placeholder="Password">
+          </div>
+          <div class="form-group">
+            <label class="text-normal text-dark">Ulangi Password</label>
+            <input type="password" name="password_2" class="form-control pass2" placeholder="Ulangi Password">
           </div>
           <div class="form-group">
             <div class="peers ai-c jc-sb fxw-nw">
               <div class="peer">
-                <div class="checkbox checkbox-circle checkbox-info peers ai-c">
-                    <a class="peer peer-greed go-reset" href="">Lupa Password ?</a>
-                </div>
-              </div>
-              <div class="peer">
-                <button id="signin" class="btn btn-primary">Login</button>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-      
-      <div class="col-12 col-md-4 peer pX-40 pY-80 h-100 bgc-white scrollable pos-r reset-page" style='min-width: 320px;'>
-        <h4 class="fw-300 c-grey-900 mB-40">Lupa Password</h4>
-        <form>
-          <div class="form-group">
-            <label class="text-normal text-dark">Username</label>
-            <input type="text" name="username" class="form-control" placeholder="Username">
-          </div>
-          <div class="form-group">
-            <div class="peers ai-c jc-sb fxw-nw">
-              <div class="peer">
-                <div class="checkbox checkbox-circle checkbox-info peers ai-c">
-                    <a class="peer peer-greed go-login" href=""><u>Back to Login</u></a>
-                </div>
-              </div>
-              <div class="peer">
-                <button id="reset" class="btn btn-primary">Reset Password</button>
+                <button id="signin" class="btn btn-primary">Reset</button>
               </div>
             </div>
           </div>
@@ -133,31 +108,28 @@
   <script src="{{url('assets')}}/js/plugin/jquery.form.min.js"></script> 
   <script src="{{url('assets')}}/_custom/js/script.js"></script> 
   <script>
-    $(document).ready(function(){
-      $(".reset-page").hide();
-    });
-    $(".go-reset").click(function(e){
-      e.preventDefault();
-      $(".login-page").hide();
-      $(".reset-page").show();
-    });
-    $(".go-login").click(function(e){
-      e.preventDefault();
-      $(".login-page").show();
-      $(".reset-page").hide();
-    });
     $('#signin').click(function(e) {
         e.preventDefault();
+        if($(".pass1").val() != $(".pass2").val()){
+          swal('Password yang anda masukan tidak sama');
+          return false;
+        }
         var btn = $(this);
         var form = $(this).closest('form');
 
         form.validate({
             rules: {
-                username: {
+                id: {
                     required: true
                 },
-                password: {
+                token: {
                     required: true
+                },
+                password_1: {
+                    required : true,
+                },
+                password_2: {
+                    required : true,
                 }
             }
         });
@@ -167,53 +139,17 @@
         apiLoading(true, btn);            
         // return false;
         form.ajaxSubmit({
-          url : "{{url('login/auth')}}",
+          url : "{{url('login/execute-reset')}}",
           data: { _token: "{{ csrf_token() }}" },
           type: 'POST',
           success: function(response) {
             apiLoading(false, btn);
             apiRespone(response,
-              function(res){
-                if(res.api_status == 1){
-                  localStorage.setItem("jwt_token", response.jwt_token);
-                }
-              },
+              null,
               () => {
-                window.location = "{{Request::session()->get('last_url')}}";
+                window.location = "{{url('login')}}";
               }
             );
-          },
-          error: function(error){
-            apiLoading(false, btn);
-            swal(error.statusText);
-          }
-        });
-    });
-    
-    $('#reset').click(function(e) {
-        e.preventDefault();
-        var btn = $(this);
-        var form = $(this).closest('form');
-
-        form.validate({
-            rules: {
-                username: {
-                    required: true
-                },
-            }
-        });
-        if (!form.valid()) {
-            return;
-        }
-        apiLoading(true, btn);            
-        // return false;
-        form.ajaxSubmit({
-          url : "{{url('login/reset')}}",
-          data: { _token: "{{ csrf_token() }}" },
-          type: 'POST',
-          success: function(response) {
-            apiLoading(false, btn);
-            apiRespone(response);
           },
           error: function(error){
             apiLoading(false, btn);

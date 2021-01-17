@@ -10,6 +10,8 @@ use Request;
 use Sideveloper;
 use DB;
 use JWTAuth;
+use Str;
+use Hash;
 class LoginController extends Controller
 {
     /*
@@ -49,6 +51,9 @@ class LoginController extends Controller
         return view('login');
     }
 
+    public function getFormReset(){
+        return view('reset');
+    }
     public function postAuth(){
         $credentials = Request::only('username', 'password');
 
@@ -69,5 +74,58 @@ class LoginController extends Controller
         }
         return response()->json($res);
 
+    }
+
+    public function postReset(){
+        $username          = Request::input('username');
+        $user_data = DB::table('users')->where('username', $username)->first();
+        if($user_data){
+            if($user_data->email){
+                $token_reset = $user_data->token_reset ? $user_data->token_reset : Str::random(20);
+                $update['token_reset'] = $token_reset;
+                DB::table('users')
+                    ->where('username', $username)
+                    ->update($update);
+                $link = url('login/form-reset?id='.$user_data->id.'&token='.$token_reset);
+                $tujuan['to'] = $user_data->email;
+                $send['contents']   = "<p>Halo ".$user_data->nama.",</p>
+                <p>Anda telah mencoba untuk mereset Password anda, Klik tombol berikut:</p>
+                <span class=\"btn btn-primary\"><a href=\"$link\" target=\"_blank\">Reset Password</a></span>
+                <br/>
+                <p>Terima kasih.</p>";
+                Sideveloper::sendMail('Reset Password', $tujuan, $send);
+                $res['api_status']  = 1;
+                $res['api_message'] = 'Berhasil, silahkan cek email anda';
+            }else{                
+                $res['api_status']  = 0;
+                $res['api_message'] = 'User anda belum terdaftar email';
+            }
+        }else{
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Usename tidak ditemukan';
+        }
+        return response()->json($res);
+    }
+
+    public function postExecuteReset(){
+        $id         = Request::input('id');
+        $token      = Request::input('token');
+        $password_1 = Request::input('password_1');
+
+        $cek_exist = DB::table('users')->where('id', $id)->where('token_reset', $token)->first();
+        if($cek_exist){
+            $update['token_reset'] = null;
+            $update['password']    = Hash::make($password_1);
+            DB::table('users')
+                ->where('id', $id)
+                ->update($update);
+                
+            $res['api_status']  = 1;
+            $res['api_message'] = 'Password berhasil dirubah';
+        }else{
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Halaman Reset Tidak Sesuai / Sudah Kadaluarsa';
+        }
+        return response()->json($res);
     }
 }
