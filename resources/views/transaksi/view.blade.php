@@ -14,6 +14,7 @@
                                 {!!Sideveloper::formInput('Waktu', 'text', 'tanggal', date('Y-m-d H:i:s'))!!}
                             </div>
                             <div class="col-md-6">
+                                {!!Sideveloper::formInput('Hour Meter', 'number', 'hour_meter')!!}
                                 {!!Sideveloper::formInput('BBM Level', 'number', 'bbm_level')!!}
                                 <div class="form-group m-form__group"> 
                                     <label><button id="getLocation" onclick="openMap()"type="button" class="btn btn-sm btn-primary">Get Lokasi</button></label> 
@@ -37,6 +38,7 @@
                             <th>Nama Alat</th>
                             <th>Tanggal</th>
                             <th>BBM Level</th>
+                            <th>Hour Meter</th>
                             <th width="100px">Lokasi</th>
                         </tr>
                     </thead>
@@ -46,6 +48,7 @@
                             <th>Nama Alat</th>
                             <th>Tanggal</th>
                             <th>BBM Level</th>
+                            <th>Hour Meter</th>
                             <th>Lokasi</th>
                         </tr>
                     </tfoot>
@@ -145,6 +148,9 @@
                     required: true,
                     min     : 0,
                 },
+                hour_meter: {
+                    min     : 0,
+                },
                 gps: {
                     required: true,
                     maxlength: 500,
@@ -213,8 +219,9 @@
         columns : [
             { "data" : "id" },
             { "data" : "nama_alat", "name" : "m_alat.nama" },
-            { "data" : "tanggal" },
+            { "data" : "tanggal", "name" : "transaksi.tanggal" },
             { "data" : "bbm_level" },
+            { "data" : "hour_meter" },
             { "data" : "gps" },
         ],
         initComplete: function () {
@@ -224,7 +231,7 @@
                     var input = '<input class="form-control">';
                     if(column[0] == 2){
                         input = '<input type="date" class="form-control">';
-                    }else if(column[0] == 3){
+                    }else if(column[0] == 3 || column[0] == 4){
                         input = '<input type="number" class="form-control">';
                     }
                     $(input).appendTo($(column.footer()).empty())
@@ -272,6 +279,7 @@
             $("#tipe").val(2);
             $("#id_alat").val(res.data.id_alat).trigger('change');
             $("#bbm_level").val(res.data.bbm_level);
+            $("#hour_meter").val(res.data.hour_meter);
             $("#tanggal").val(res.data.tanggal);
             $("#gps").val(res.data.gps);
             $("#label-submit").html('Ubah');

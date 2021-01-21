@@ -38,7 +38,8 @@ class TransaksiController extends MiddleController
         $search    = $this->input('search');
 
         $query = DB::table($this->table)
-            ->select('id', 'm_alat.nama as nama_alat', 'tanggal','bbm_level','gps')
+            ->select('transaksi.id', 'm_alat.nama as nama_alat', 'transaksi.tanggal', 'hour_meter','bbm_level','gps')
+            ->leftJoin('hourmeter', 'hourmeter.trans_id', '=', $this->table.'.id')
             ->join('m_alat', 'm_alat.id_alat', '=', $this->table.'.id_alat');
 
         if($datatable)
@@ -76,13 +77,14 @@ class TransaksiController extends MiddleController
 
     #Insert / Update Data
     public function postInsert(){
-        $id        = $this->input('id');
-        $id_alat   = $this->input('id_alat',"required|numeric|exists:m_alat,id_alat");
-        $tanggal   = $this->input('tanggal', "required|date_format:Y-m-d H:i:s");
-        $bbm_level = $this->input('bbm_level', "required|numeric|min:0");
-        $gps       = $this->input('gps', 'required');
-        $tipe      = $this->input('tipe') ?  $this->input('tipe') : 1;
-        $sess      = JWTAuth::parseToken()->getPayload();
+        $id         = $this->input('id');
+        $id_alat    = $this->input('id_alat',"required|numeric|exists:m_alat,id_alat");
+        $tanggal    = $this->input('tanggal', "required|date_format:Y-m-d H:i:s");
+        $bbm_level  = $this->input('bbm_level', "required|numeric|min:0");
+        $hour_meter = $this->input('hour_meter', "nullable||numeric|min:0");
+        $gps        = $this->input('gps', 'required');
+        $tipe       = $this->input('tipe') ?  $this->input('tipe') : 1;
+        $sess       = JWTAuth::parseToken()->getPayload();
 
         #CEK VALID
         if($this->validator()){
@@ -107,7 +109,14 @@ class TransaksiController extends MiddleController
         $save['id_alat']    = $id_alat;
         $save['tanggal']    = $tanggal;
         $save['bbm_level']  = $bbm_level;
-        $save['gps']        = $gps;        
+        $save['gps']        = $gps;
+        
+        #HOURMETER DATA
+        $save_hour['id_alat']    = $id_alat;
+        $save_hour['tanggal']    = $tanggal;
+        $save_hour['hour_meter'] = $hour_meter;
+        $save_hour['jwt_device'] = $sess['device'];
+
         if($tipe == 1){
             $save['jwt_device'] = $sess['device'];
             $save['created_by'] = JWTAuth::user()->id;
@@ -139,6 +148,14 @@ class TransaksiController extends MiddleController
             $save_log['id_alat']  = $id_alat;
             $save_log['periode']  = date('Ym');
             DB::table('transaksi_log')->insert($save_log);
+
+            #INSERT WHEN ISSET HOURMETER
+            if($hour_meter){
+                $save_hour['created_by'] = JWTAuth::user()->id;
+                $save_hour['created_at'] = new \DateTime();
+                $save_hour['id_trans']   = $getId;
+                DB::table('hourmeter')->insert($save_hour);
+            }
             
             $res['api_message'] = 'Berhasil Ditambahkan';
         }else{
@@ -147,6 +164,24 @@ class TransaksiController extends MiddleController
             DB::table($this->table)
                 ->where($this->pk, $id)
                 ->update($save);
+
+            #HOURMETER WHEN ISSET HOURMETER
+            if($hour_meter){
+                #HM IS EXIST IN DB
+                $cek_hm_exist = DB::table('hourmeter')->where('trans_id', $id)->count();
+                if($cek_hm_exist > 0){ #UPDATE
+                    $save_hour['updated_by'] = JWTAuth::user()->id;
+                    $save_hour['updated_at'] = new \DateTime();
+                    DB::table('hourmeter')
+                        ->where('trans_id', $id)
+                        ->update($save_hour);
+                }else{ #INSERT NEW
+                    $save_hour['created_by'] = JWTAuth::user()->id;
+                    $save_hour['created_at'] = new \DateTime();
+                    $save_hour['trans_id']   = $id;
+                    DB::table('hourmeter')->insert($save_hour);
+                }
+            }
             $res['api_message'] = 'Berhasil Diubah';
         }
 
@@ -185,7 +220,10 @@ class TransaksiController extends MiddleController
     public function getFilter(){
         $id = $this->input('id');
 
-        $data = DB::table($this->table)->where($this->pk, $id)->first();
+        $data = DB::table($this->table)
+            ->select('transaksi.id', 'transaksi.tanggal', 'transaksi.id_alat', 'bbm_level', 'hour_meter', 'gps')
+            ->leftJoin('hourmeter', 'hourmeter.trans_id', '=', 'transaksi.id')
+            ->where('transaksi.'.$this->pk, $id)->first();
 
         #BERHASIL
         $res['api_status']  = 1;
