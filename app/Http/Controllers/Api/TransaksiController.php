@@ -320,7 +320,7 @@ class TransaksiController extends MiddleController
         $search    = $this->input('search');
 
         $query = DB::table($this->table)
-            ->select('id', 'm_alat.nama as nama_alat', 'tanggal','box')
+            ->select('id', 'm_alat.nama as nama_alat', 'tanggal_start', 'tanggal_end','box')
             ->join('m_alat', 'm_alat.id_alat', '=', $this->table.'.id_alat');
 
         if($datatable)
@@ -330,11 +330,12 @@ class TransaksiController extends MiddleController
     #Insert / Update Data
     public function postBoxInsert(){
         $this->box();
-        $id         = $this->input('id');
-        $id_alat    = $this->input('id_alat',"required|numeric|exists:m_alat,id_alat");
-        $tanggal    = $this->input('tanggal', "required|date_format:Y-m-d H:i:s");
-        $box = $this->input('box', "required|numeric|min:0");
-        $tipe       = $this->input('tipe') ?  $this->input('tipe') : 1;
+        $id            = $this->input('id');
+        $id_alat       = $this->input('id_alat',"required|numeric|exists:m_alat,id_alat");
+        $tanggal_start = $this->input('tanggal_start', "required|date_format:Y-m-d H:i:s");
+        $tanggal_end   = $this->input('tanggal_end', "required|date_format:Y-m-d H:i:s");
+        $box           = $this->input('box', "required|numeric|min:0");
+        $tipe          = $this->input('tipe') ?  $this->input('tipe') : 1;
         $sess      = JWTAuth::parseToken()->getPayload();
 
         #CEK VALID
@@ -342,9 +343,18 @@ class TransaksiController extends MiddleController
             return  $this->validator(true);
         }
 
+        #CEK Tanggal Start < Tanggal End
+        if($tanggal_start > $tanggal_end){
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Tanggal Mulai lebih besar dari tanggal Selesai';
+            Sideveloper::createLog('Tanggal Mulai lebih besar dari tanggal Selesai', 'LOGIC', 'warning');
+            return $this->api_output($res);
+        }
+
         #CEK EXIST
         $cek_exist = DB::table($this->table)
-            ->where('tanggal', $tanggal)
+            ->where('tanggal_start', $tanggal_start)
+            ->where('tanggal_end', $tanggal_end)
             ->where('id_alat', $id_alat);
         if($tipe == 2){
             $cek_exist->where('id', '<>', $id);
@@ -357,9 +367,11 @@ class TransaksiController extends MiddleController
         }
 
         #INSERT DATA
-        $save['id_alat'] = $id_alat;
-        $save['tanggal'] = $tanggal;
-        $save['box']     = $box;
+        $save['id_alat']       = $id_alat;
+        $save['tanggal_start'] = $tanggal_start;
+        $save['tanggal_end']   = $tanggal_end;
+        $save['tanggal']       = $tanggal_start;
+        $save['box']           = $box;
         if($tipe == 1){
             $save['jwt_device'] = $sess['device'];
             $save['created_by'] = JWTAuth::user()->id;

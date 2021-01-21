@@ -11,10 +11,11 @@
                                 {!!Sideveloper::formHidden('id')!!}
                                 {!!Sideveloper::formHidden('tipe', 1)!!}
                                 {!!Sideveloper::formSelect2('Nama Alat', $alat, 'id_alat')!!}
-                                {!!Sideveloper::formInput('Waktu', 'text', 'tanggal', date('Y-m-d H:i:s'))!!}
+                                {!!Sideveloper::formInput('Total Box', 'number', 'box')!!}
                             </div>
                             <div class="col-md-6">
-                                {!!Sideveloper::formInput('Box', 'number', 'box')!!}
+                                {!!Sideveloper::formInput('Waktu Mulai', 'text', 'tanggal_start', date('Y-m-d H:i:s'))!!}
+                                {!!Sideveloper::formInput('Waktu Selesai', 'text', 'tanggal_end', date('Y-m-d H:i:s'))!!}
                             </div>
                         </div>
                         {!!Sideveloper::formSubmit2('Simpan', 'submit')!!}
@@ -31,7 +32,8 @@
                         <tr>
                             <th>Aksi</th>
                             <th>Nama Alat</th>
-                            <th>Tanggal</th>
+                            <th>Waktu Mulai</th>
+                            <th>Waktu Selesai</th>
                             <th>Box</th>
                         </tr>
                     </thead>
@@ -39,7 +41,8 @@
                         <tr>
                             <th>Filter</th>
                             <th>Nama Alat</th>
-                            <th>Tanggal</th>
+                            <th>Waktu Mulai</th>
+                            <th>Waktu Selesai</th>
                             <th>Box</th>
                         </tr>
                     </tfoot>
@@ -52,7 +55,7 @@
 </div>
 <script>
     $('#id_alat').select2();
-    $('#tanggal').datetimepicker({
+    $('#tanggal_start, #tanggal_end').datetimepicker({
         format: 'YYYY-MM-DD HH:mm:ss'
     });
     $('#submit').click(function(e) {
@@ -64,7 +67,10 @@
                 id_alat: {
                     required: true,
                 },
-                tanggal: {
+                tanggal_start: {
+                    required: true,
+                },
+                tanggal_end: {
                     required: true,
                 },
                 box: {
@@ -135,7 +141,8 @@
         columns : [
             { "data" : "id" },
             { "data" : "nama_alat", "name" : "m_alat.nama" },
-            { "data" : "tanggal" },
+            { "data" : "tanggal_start" },
+            { "data" : "tanggal_end" },
             { "data" : "box" },
         ],
         initComplete: function () {
@@ -143,9 +150,9 @@
                 var column = this;
                 if(column[0] != 0){
                     var input = '<input class="form-control">';
-                    if(column[0] == 2){
+                    if(column[0] == 2 || column[0] == 3){
                         input = '<input type="date" class="form-control">';
-                    }else if(column[0] == 3){
+                    }else if(column[0] == 4){
                         input = '<input type="number" class="form-control">';
                     }
                     $(input).appendTo($(column.footer()).empty())
@@ -192,7 +199,8 @@
             $("#id").val(res.data.id);
             $("#tipe").val(2);
             $("#id_alat").val(res.data.id_alat).trigger('change');
-            $("#tanggal").val(res.data.tanggal);
+            $("#tanggal_start").val(res.data.tanggal_start);
+            $("#tanggal_end").val(res.data.tanggal_end);
             $("#box").val(res.data.box);
             $("#label-submit").html('Ubah');
             window.scrollTo(0,0);
