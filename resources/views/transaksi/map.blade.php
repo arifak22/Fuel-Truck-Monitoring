@@ -21,8 +21,16 @@
         center: [110.42491207584106, -6.938581241192438], // starting position [lng, lat]
         zoom: 16.6 // starting zoom
     });
-    
+    let mapMarkers = [];
+    let marker = new mapboxgl.Marker();
+
     map.on('load', function () {
+        getData();
+    });
+    setInterval(getData, 30000);
+    function getData(){
+        mapMarkers.forEach((marker) => marker.remove())
+        mapMarkers = [];
         $.ajax({
             method: "GET",
             url  : "{{Sideveloper::apiUrl('transaksi/lokasi-last')}}",
@@ -46,13 +54,14 @@
                 el.className = 'marker';
                 el.innerHTML = '<b style="-webkit-text-stroke: 0.2px white;">'+element.kode_alat+'</b><br>';
                 el.appendChild(oImg);
-                new mapboxgl.Marker(el)
+                marker = new mapboxgl.Marker(el)
                     .setLngLat([element.lng, element.lat])
                     .addTo(map);
-
+                mapMarkers.push(marker)
             });
         })
-    });
+    }
+    
     function openTab(element){
         new mapboxgl.Popup({ closeOnClick: false })
             .setLngLat([element.lng, element.lat])
