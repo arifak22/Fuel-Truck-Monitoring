@@ -578,6 +578,7 @@ class TransaksiController extends MiddleController
 
     public function getLokasiLast(){
         $id = $this->input('id');
+        $whereadd = "";
         if($id){
             $filter  = DB::table('transaksi')->where('id', $id)->first();
             $tanggal = Sideveloper::defaultDate($filter->tanggal);
@@ -586,10 +587,16 @@ class TransaksiController extends MiddleController
             $where3  = "date(c.tanggal) = $tanggal and c.id_alat = $filter->id_alat";
             $tanggal_box = Sideveloper::date($tanggal);
         }else{
-            $where = "a.tanggal = (select max(aa.tanggal) from transaksi as aa where aa.id_alat = a.id_alat)";
-            $where2 = "b.tanggal = (select max(bb.tanggal) from hourmeter as bb where bb.id_alat = b.id_alat)";
-            $where3 = "date(c.tanggal) = CURDATE()";
-            $tanggal_box = 'Hari ini';
+            $tanggal = $this->input('tanggal');
+            $ymd = Sideveloper::defaultDate($tanggal);
+            $id_alat = $this->input('alat');
+            $alat = implode (", ", $id_alat);
+            $whereadd = "where m_alat.id_alat in($alat)";
+            $where = "a.tanggal = (select max(aa.tanggal) from transaksi as aa where aa.id_alat in ($alat) and aa.tanggal <= '$tanggal')";
+            $where2 = "b.tanggal = (select max(bb.tanggal) from hourmeter as bb where bb.id_alat in ($alat) and bb.tanggal <= '$tanggal')";
+            $where3 = "date(c.tanggal) = $ymd";
+            $tanggal_box = $ymd == date('Y-m-d') ? 'Hari ini' : Sideveloper::date($tanggal);
+
         }
         $last_data = DB::select(DB::raw("
             select m_alat.id_alat, m_alat.nama, m_alat.kode_alat, ta.bbm_level, ta.gps, ta.tanggal as tanggal_bbm, 
@@ -603,7 +610,9 @@ class TransaksiController extends MiddleController
             on tb.id_alat = m_alat.id_alat
             left join(select sum(box) box, id_alat from box c where $where3
             GROUP BY id_alat) tc 
-            on tc.id_alat = m_alat.id_alat"
+            on tc.id_alat = m_alat.id_alat
+            $whereadd
+            "
         ));
         // dd($last_data);
         $data = array();

@@ -50,6 +50,8 @@ class TransaksiController extends MiddleController
         $data['breadcrumbs'] = [
             ['link' => '#', 'title'=> 'Truck Map'],
         ];
+        $alat   = Sideveloper::getAlat()->get();
+        $data['alat'] = Sideveloper::makeOption($alat, 'id_alat', 'nama', false);
         $data['test'] = DB::table($this->table)->first();
         return Sideveloper::load('template', $this->view.'map', $data);
     }
@@ -192,7 +194,7 @@ class TransaksiController extends MiddleController
 
         $start = $tipe_laporan == '1' ? $nstart_date : $nstart_month;
         $end   = $tipe_laporan == '1' ? $nend_date : $nend_month;
-        
+
         $waktu = '';
         $waktu   = "AND TANGGAL BETWEEN '$start' and '$end'";
         $prepare = [];

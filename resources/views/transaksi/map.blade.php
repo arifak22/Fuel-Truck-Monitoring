@@ -3,7 +3,34 @@
 <div class="container-fluid">
     {!!Sideveloper::title($title)!!}
     {!!Sideveloper::breadcrumb($breadcrumbs)!!}
-    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="bd bdrs-3 p-20 mB-20 form-bg" style="background-color: white">
+                <form id="formId">
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {!!Sideveloper::formInput('Waktu', 'text', 'tanggal', date('Y-m-d H:i:s'))!!}
+                                <div class="form-group row">
+                                    <div class="col-sm-10">
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" id="autorefresh" type="checkbox" checked> Auto Refresh (30 Detik)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                {!!Sideveloper::formSelect2('Nama Alat', $alat, 'id_alat[]', 'all', 'multiple')!!}
+                                <button type="button" onclick="getData(true);" class="btn btn-info"><i class="fa fa-filter" aria-hidden="true"></i> Filter</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <div class="row">
         <div class="col-md-12">
             <div class="bgc-white bd bdrs-3 p-20 mB-20">
@@ -13,6 +40,9 @@
     </div>
 </div>
 <script>
+    
+    $('#id_alat').select2();
+
     mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpZmFrMjIiLCJhIjoiY2tqZWhwbDVuNXE1ODJ4cWo4dTF2MW1wbiJ9.tZk1uItNZtO-6dgydQxjfg';
     var map = new mapboxgl.Map({
         container: 'map',
@@ -28,7 +58,14 @@
         getData();
     });
     setInterval(getData, 30000);
-    function getData(){
+    function getData(force = false){
+        if(!$('#autorefresh').is(":checked") && !force){
+            return false;
+        }
+        var now = new Date();
+        var mon = now.getMonth() + 1;
+        var datenow = now.getFullYear() + '-' + ('0' + mon).slice(-2) + '-' + ('0' + now.getDate()).slice(-2) + ' ' + ('0' + now.getHours()).slice(-2) +':'+ ('0' + now.getMinutes()).slice(-2) +':'+ ('0' + now.getSeconds()).slice(-2);
+        $("#tanggal").val(datenow);
         mapMarkers.forEach((marker) => marker.remove())
         mapMarkers = [];
         $.ajax({
@@ -37,7 +74,7 @@
             headers: {
                 "Authorization": "Bearer " + localStorage.getItem('jwt_token')
             },
-            data: { _token: "{{ csrf_token() }}" }
+            data: { _token: "{{ csrf_token() }}", tanggal : datenow, alat: $("#id_alat").val() }
         })
         .done(function(res) {
             res.data.forEach(element => {

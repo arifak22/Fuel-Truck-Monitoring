@@ -332,14 +332,18 @@
 			if($data){
 				foreach($data as $d){
 					$selected = $d['value'] == $value ? 'selected' : '';
+					if($value = 'all'){
+						$selected = 'selected';
+					}
 					$option .= "<option value=\"$d[value]\" $selected>$d[name]</option>";
 				}
 			}
+			$id = str_replace("[]","",$name);
 			return "<div class=\"form-group m-form__group\">
                 <label>
                     $label
                 </label><br/>
-				<select name=\"$name\" id=\"$name\" $add>
+				<select name=\"$name\" id=\"$id\" $add>
 					$option
 				</select>
             </div>";
