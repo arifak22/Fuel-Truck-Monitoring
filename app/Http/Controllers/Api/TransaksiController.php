@@ -129,12 +129,12 @@ class TransaksiController extends MiddleController
             ->where('id_alat', $id_alat)
             ->orderBy('tanggal', 'asc')
             ->value('hour_meter');
-        if($hm_sebelum && ($hm_sebelum > $hour_meter)){
+        if($hour_meter && $hm_sebelum && ($hm_sebelum > $hour_meter)){
             $res['api_status']  = 0;
             $res['api_message'] = 'Hour Meter sebelumnya : '. $hm_sebelum;
             return $this->api_output($res);
         }
-        if($hm_setelah && ($hm_setelah < $hour_meter)){
+        if($hour_meter && $hm_setelah && ($hm_setelah < $hour_meter)){
             $res['api_status']  = 0;
             $res['api_message'] = 'Hour Meter setelahnya : '. $hm_setelah;
             return $this->api_output($res);
@@ -194,59 +194,60 @@ class TransaksiController extends MiddleController
                         DB::table('hourmeter')->insert($save_hour);
                     }
                 }
-                #DELETE LAST LOG                
-                DB::table('transaksi_log')
-                    ->whereYear('tanggal', date('Y'))
-                    ->whereMonth('tanggal', date('m'))
-                    ->where('id_alat', $id_alat)
-                    ->delete();
-
-                #INSERT LOG DATA
-                $listperiode = DB::table($this->table)
-                    ->whereYear('tanggal', date('Y'))
-                    ->whereMonth('tanggal', date('m'))
-                    ->where('id_alat', $id_alat)
-                    ->orderBy('tanggal', 'asc')
-                    ->get();
-                $periodesebelum = DB::table($this->table)
-                    ->whereYear('tanggal', date('Y', strtotime('-1 month')))
-                    ->whereMonth('tanggal', date('m', strtotime('-1 month')))
-                    ->where('id_alat', $id_alat)
-                    ->orderBy('tanggal', 'desc')
-                    ->first();
-                $bbmstart = null;
-                if($periodesebelum){
-                    $bbmstart   = $periodesebelum->bbm_level;
-                    $id_sebelum = $periodesebelum->id;
-                }
-
-                foreach($listperiode as $k => $lp){
-                    if($bbmstart){
-                        $nilai_transaksi = $bbmstart - $lp->bbm_level;
-                        $status = 'OUT';
-                        if($nilai_transaksi < 0){ #MENGISI
-                            $status = 'IN';
-                            $nilai_transaksi = abs($nilai_transaksi);
-                        }
-                        $save_log['id_sebelum'] = $id_sebelum;
-                    }else{
-                        $status          = 'IN';
-                        $nilai_transaksi = abs($lp->bbm_level);
-                        $save_log['id_sebelum']    = null;
-                    }
-                    $save_log['id_trans'] = $lp->id;
-                    $save_log['tanggal']  = $lp->tanggal;
-                    $save_log['nilai']    = abs($nilai_transaksi);
-                    $save_log['status']   = $status;
-                    $save_log['id_alat']  = $id_alat;
-                    $save_log['periode']  = date('Ym');
-                    DB::table('transaksi_log')->insert($save_log);
-
-                    $bbmstart   = $lp->bbm_level;
-                    $id_sebelum = $lp->id;
-                }
                 $res['api_message'] = 'Berhasil Diubah';
             }
+        #DELETE LAST LOG                
+        DB::table('transaksi_log')
+            ->whereYear('tanggal', date('Y'))
+            ->whereMonth('tanggal', date('m'))
+            ->where('id_alat', $id_alat)
+            ->delete();
+
+        #INSERT LOG DATA
+        $listperiode = DB::table($this->table)
+            ->whereYear('tanggal', date('Y'))
+            ->whereMonth('tanggal', date('m'))
+            ->where('id_alat', $id_alat)
+            ->orderBy('tanggal', 'asc')
+            ->get();
+        $periodesebelum = DB::table($this->table)
+            ->whereYear('tanggal', date('Y', strtotime('-1 month')))
+            ->whereMonth('tanggal', date('m', strtotime('-1 month')))
+            ->where('id_alat', $id_alat)
+            ->orderBy('tanggal', 'desc')
+            ->first();
+        // dd($listperiode);
+        $bbmstart = null;
+        if($periodesebelum){
+            $bbmstart   = $periodesebelum->bbm_level;
+            $id_sebelum = $periodesebelum->id;
+        }
+
+        foreach($listperiode as $k => $lp){
+            if($bbmstart){
+                $nilai_transaksi = $bbmstart - $lp->bbm_level;
+                $status = 'OUT';
+                if($nilai_transaksi < 0){ #MENGISI
+                    $status = 'IN';
+                    $nilai_transaksi = abs($nilai_transaksi);
+                }
+                $save_log['id_sebelum'] = $id_sebelum;
+            }else{
+                $status          = 'IN';
+                $nilai_transaksi = abs($lp->bbm_level);
+                $save_log['id_sebelum']    = null;
+            }
+            $save_log['id_trans'] = $lp->id;
+            $save_log['tanggal']  = $lp->tanggal;
+            $save_log['nilai']    = abs($nilai_transaksi);
+            $save_log['status']   = $status;
+            $save_log['id_alat']  = $id_alat;
+            $save_log['periode']  = date('Ym');
+            DB::table('transaksi_log')->insert($save_log);
+
+            $bbmstart   = $lp->bbm_level;
+            $id_sebelum = $lp->id;
+        }
 
         #BERHASIL
         DB::commit();
@@ -742,6 +743,54 @@ class TransaksiController extends MiddleController
 
     }
 
+    public function getGrafikTruk(){
+        $id_alat = $this->input('alat');
+        $start   = $this->input('start_date');
+        $end     = $this->input('end_date');
+
+        $begin = new \DateTime($start);
+        $end = new \DateTime($end);
+        
+        $interval = \DateInterval::createFromDateString('1 day');
+        $period = new \DatePeriod($begin, $interval, $end);
+
+        $res['tanggal']              = null;
+        $res['konsumsi_bbm']              = null;
+        $res['selisih_hourmeter']              = null;
+        
+        foreach ($period as $dt) {
+            $tanggal = $dt->format("Y-m-d");
+            $bbm = DB::table('transaksi_log')
+                ->select(DB::raw('IFNULL(round(sum(nilai),2), 0) konsumsi_bbm'))
+                ->where('id_alat', $id_alat)
+                ->whereDate('tanggal', $tanggal)
+                ->groupByRaw('DATE_FORMAT(tanggal, "%Y-%m-%d"), id_alat')
+                ->value('konsumsi_bbm');
+            $res['konsumsi_bbm'][] = $bbm ? $bbm : 0;
+            $box = DB::table('box')
+                ->select(DB::raw('IFNULL(round(SUM(box),2), 0) total_box'))
+                ->where('id_alat', $id_alat)
+                ->whereDate('tanggal', $tanggal)
+                ->groupByRaw('DATE_FORMAT(tanggal, "%Y-%m-%d"), id_alat')
+                ->value('total_box');
+            $res['total_box'][] = $box ? $box : 0;
+
+            $hourmeter = DB::select(DB::raw("SELECT (B.hour_meter-C.hour_meter) selisih_hourmeter FROM ( SELECT
+                    MAX(tanggal) maximum,MIN(tanggal) minimum FROM hourmeter 
+                    where 1=1 AND date(tanggal) = '$tanggal'
+                    GROUP BY id_alat ) A
+                    LEFT JOIN hourmeter B ON B.tanggal = A.maximum
+                    LEFT JOIN hourmeter C ON C.tanggal = A.minimum"));
+            $res['selisih_hourmeter'][] = $hourmeter ? $hourmeter[0]->selisih_hourmeter : 0;
+            $res['tanggal'][] = $dt->format("Y/m/d");
+        }
+        // die();
+        
+        #BERHASIL
+        $res['api_status']  = 1;
+        $res['api_message'] = 'Filter';
+        return $this->api_output($res);
+    }
     // public function postProccessKonsumsi(){
     //     $periode = $this->input('periode', $periode);
     //     $tahun = substr($periode, 0, 4);

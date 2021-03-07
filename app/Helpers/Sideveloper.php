@@ -215,13 +215,12 @@
 		
 		#VIEW
 		public static function formView($label, $isi){
-			return "<div class=\"form-group\">
-						<label>
-							$label
-						</label><br>
-						$isi
-						<hr style=\"margin:0\">
-					</div>";
+			return "<div class=\"form-group m-form__group\">
+			<label>
+				$label
+			</label>
+			<input type=\"text\" value=\"$isi\" class=\"form-control m-input m-input--pill\"  disabled>
+		</div>";
 		}
 
 		#INPUT HIDDEN

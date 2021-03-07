@@ -71,7 +71,21 @@ class HomeController extends MiddleController
         ];
         
         $alat   = Sideveloper::getAlat()->get();
-        $data['alat'] = Sideveloper::makeOption($alat, 'id_alat', 'nama', true);
+        $data['alat'] = Sideveloper::makeOption($alat, 'id_alat', 'nama', false);
         return Sideveloper::load('template', 'home/index', $data);
+    }
+
+    public function getTruk(){
+        $id = $this->input('id');
+        $data['title'] = 'Activity Truk';
+        $data['breadcrumbs'] = [
+            ['link' => Sideveloper::selfUrl(''), 'title'=> 'Activity Truk'],
+            // ['link' => '#', 'title'=> 'View'],
+        ];
+        
+        $alat   = DB::table('m_alat')->where('id_alat', $id)->first();
+        $data['id_alat'] = $id;
+        $data['alat'] = $alat;
+        return Sideveloper::load('template', 'home/truk', $data);
     }
 }
