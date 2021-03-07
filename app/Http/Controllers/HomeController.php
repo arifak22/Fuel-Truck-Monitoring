@@ -84,8 +84,19 @@ class HomeController extends MiddleController
         ];
         
         $alat   = DB::table('m_alat')->where('id_alat', $id)->first();
+
+        $bbm_level = DB::table('transaksi')->where('id_alat', $id)->orderBy('tanggal', 'desc')->first();
+        $hourmeter = DB::table('hourmeter')->where('id_alat', $id)->orderBy('tanggal', 'desc')->first();
+        $box = DB::table('box')
+            ->select(DB::raw('sum(box) jumlah'))
+            ->where('id_alat', $id)
+            ->whereDate('tanggal', date('Y-m-d'))
+            ->value('jumlah');
         $data['id_alat'] = $id;
-        $data['alat'] = $alat;
+        $data['alat']    = $alat;
+        $data['bbm']     = $bbm_level;
+        $data['hm']      = $hourmeter;
+        $data['box']      = $box ? $box : 0;
         return Sideveloper::load('template', 'home/truk', $data);
     }
 }

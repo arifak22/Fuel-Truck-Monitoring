@@ -1,6 +1,48 @@
 <div class="container-fluid">
     {!!Sideveloper::title($title)!!}
     {!!Sideveloper::breadcrumb($breadcrumbs)!!}
+	<div class="row">
+        <div class="col-md-12">
+            <div class="bd bdrs-3 p-20 mB-20 form-bg" style="background-color: white">
+                <div class="row">
+					<div class="col-md-12">
+						<table class="table table-hover">
+							<tr>
+								<td width="100px">Nama</td>
+								<td width="20px">:</td>
+								<td>{{$alat->nama}}</td>
+							</tr>
+							<tr>
+								<td>Kode</td>
+								<td>:</td>
+								<td>{{$alat->kode_alat}}</td>
+							</tr>
+							<tr>
+								<td>Status</td>
+								<td>:</td>
+								<td><?php echo $alat->status =='Y' ? 'Aktif' : 'Tidak Aktif' ?></td>
+							</tr>
+							<tr>
+								<td>BBM Level</td>
+								<td>:</td>
+								<td>{{$bbm->bbm_level}} (Last Update: {{ Sideveloper::dateFull($bbm->tanggal)}})</td>
+							</tr>
+							<tr>
+								<td>Hour Meter</td>
+								<td>:</td>
+								<td>{{$hm->hour_meter}} (Last Update: {{ Sideveloper::dateFull($hm->tanggal)}})</td>
+							</tr>
+							<tr>
+								<td>Box</td>
+								<td>:</td>
+								<td>{{$box}} (Hari Ini)</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
     <div class="row">
         <div class="col-md-12">
             <div class="bd bdrs-3 p-20 mB-20 form-bg" style="background-color: white">
