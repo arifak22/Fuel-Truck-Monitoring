@@ -40,4 +40,20 @@ class MasterController extends MiddleController
         ];
         return Sideveloper::load('template', $this->view.'truk', $data);
     }
+
+    
+    #View User
+    public function getUser(){
+        $title    = 'Master User';
+        $subtitle = 'View';
+        $data['title'] = $title;
+        $data['breadcrumbs'] = [
+            ['link' => Sideveloper::selfUrl('user'), 'title'=> $title],
+            ['link' => '#', 'title'=> $subtitle],
+        ];
+        
+        $alat   = DB::table('privileges')->get();
+        $data['privilege'] = Sideveloper::makeOption($alat, 'id_privilege', 'nama_privilege', false);
+        return Sideveloper::load('template', $this->view.'user', $data);
+    }
 }

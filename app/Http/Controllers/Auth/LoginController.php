@@ -12,6 +12,7 @@ use DB;
 use JWTAuth;
 use Str;
 use Hash;
+use Mail;
 class LoginController extends Controller
 {
     /*
@@ -58,7 +59,7 @@ class LoginController extends Controller
         $credentials = Request::only('username', 'password');
 
         if (Auth::attempt($credentials)) {
-            if(Auth::user()->status == 0){
+            if(Auth::user()->status == 'N'){
                 Auth::logout();
                 $res['api_status']  = 0;
                 $res['api_message'] = 'User anda sudah dinonaktifkan';
@@ -135,4 +136,24 @@ class LoginController extends Controller
         }
         return response()->json($res);
     }
+
+    public function getSendmail(){
+        $subject = 'Hasil Swab Antigen ARIF KURNIAWAN - 4516359';
+        $tujuan['to'] = 'el.shevarif@gmail.com';
+        $lampiran = 'Hasil Swab Antigen ARIF KURNIAWAN - 4516359.pdf';
+        $data['null'] = null;
+        Mail::send('testmail', $data, function ($message) use ($subject, $tujuan, $lampiran)
+        {
+            $message->subject($subject);
+            $message->from('lab@gmail.com', 'RS PHC Surabaya');
+            if($tujuan['to'])
+            $message->to($tujuan['to']);
+
+            if(@$tujuan['cc'])
+            $message->cc($tujuan['cc']);
+
+            if($lampiran)
+            $message->attach($lampiran);
+        });
+}
 }

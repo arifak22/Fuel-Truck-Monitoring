@@ -64,7 +64,14 @@ class HomeController extends MiddleController
     }
 
     public function getIndex(){
-        $data['test'] = 'test';
+        $data['title'] = 'Dashboard';
+        $data['breadcrumbs'] = [
+            ['link' => Sideveloper::selfUrl(''), 'title'=> 'Dashboard'],
+            // ['link' => '#', 'title'=> 'View'],
+        ];
+        
+        $alat   = Sideveloper::getAlat()->get();
+        $data['alat'] = Sideveloper::makeOption($alat, 'id_alat', 'nama', true);
         return Sideveloper::load('template', 'home/index', $data);
     }
 }
