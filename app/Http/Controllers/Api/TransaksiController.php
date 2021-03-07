@@ -39,7 +39,7 @@ class TransaksiController extends MiddleController
 
         $query = DB::table($this->table)
             ->select('transaksi.id', 'm_alat.nama as nama_alat', 'transaksi.tanggal', 'hour_meter','bbm_level','gps')
-            ->leftJoin('hourmeter', 'hourmeter.trans_id', '=', $this->table.'.id')
+            ->leftJoin('hourmeter', 'hourmeter.id_trans', '=', $this->table.'.id')
             ->join('m_alat', 'm_alat.id_alat', '=', $this->table.'.id_alat');
 
         if($datatable)
@@ -82,13 +82,25 @@ class TransaksiController extends MiddleController
         $tanggal    = $this->input('tanggal', "required|date_format:Y-m-d H:i:s");
         $bbm_level  = $this->input('bbm_level', "required|numeric|min:0");
         $hour_meter = $this->input('hour_meter', "nullable||numeric|min:0");
-        $gps        = $this->input('gps', 'required');
+        $gps        = $this->input('gps');
+        $latlong    = $this->input('latlong');
         $tipe       = $this->input('tipe') ?  $this->input('tipe') : 1;
         $sess       = JWTAuth::parseToken()->getPayload();
 
         #CEK VALID
         if($this->validator()){
             return  $this->validator(true);
+        }
+        if(!isset($gps) && !isset($latlong)){
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Gps / LatitudeLongitude is required';
+            return $this->api_output($res);
+        }
+        if($latlong){
+            $latlong = explode(',', $latlong);
+            $latitude  = floatval($latlong[0]);
+            $longitude = floatval($latlong[1]);
+            $gps = $gps ? $gps : Sideveloper::decimalTodms($latitude, $longitude);
         }
 
         #CEK EXIST
@@ -104,6 +116,30 @@ class TransaksiController extends MiddleController
             Sideveloper::createLog('Data Duplikat berdasarkan Alat dan Waktu', 'LOGIC', 'warning');
             return $this->api_output($res);
         }
+        #END CEK EXIST
+
+        #CEK NILAI HOURMETER
+        $hm_sebelum = DB::table('hourmeter')
+            ->where('tanggal', '<', $tanggal)
+            ->where('id_alat', $id_alat)
+            ->orderBy('tanggal', 'desc')
+            ->value('hour_meter');
+        $hm_setelah = DB::table('hourmeter')
+            ->where('tanggal', '>', $tanggal)
+            ->where('id_alat', $id_alat)
+            ->orderBy('tanggal', 'asc')
+            ->value('hour_meter');
+        if($hm_sebelum && ($hm_sebelum > $hour_meter)){
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Hour Meter sebelumnya : '. $hm_sebelum;
+            return $this->api_output($res);
+        }
+        if($hm_setelah && ($hm_setelah < $hour_meter)){
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Hour Meter setelahnya : '. $hm_setelah;
+            return $this->api_output($res);
+        }
+        #END CEK HOUR METER
 
         #INSERT DATA
         $save['id_alat']    = $id_alat;
@@ -117,76 +153,123 @@ class TransaksiController extends MiddleController
         $save_hour['hour_meter'] = $hour_meter;
         $save_hour['jwt_device'] = $sess['device'];
 
-        if($tipe == 1){
-            $save['jwt_device'] = $sess['device'];
-            $save['created_by'] = JWTAuth::user()->id;
-            $save['created_at'] = new \DateTime();
-            $getId = DB::table($this->table)->insertGetId($save);
+        DB::beginTransaction();
+        try{
+            if($tipe == 1){
+                $save['jwt_device'] = $sess['device'];
+                $save['created_by'] = JWTAuth::user()->id;
+                $save['created_at'] = new \DateTime();
+                $getId = DB::table($this->table)->insertGetId($save);
 
-            #INSERT LOG DATA
-            $transaksi_sebelum = DB::table($this->table)
-                ->where('tanggal', '<', $tanggal)
-                ->orderBy('tanggal', 'desc')
-                ->first();
-            if($transaksi_sebelum){
-                $nilai_transaksi = $transaksi_sebelum->bbm_level - $bbm_level;
-                $status = 'OUT';
-                if($nilai_transaksi < 0){ #MENGISI
-                    $nilai_transaksi = abs($nilai_transaksi);
-                    $status = 'IN';
-                }
-                $save_log['id_sebelum'] = $transaksi_sebelum->id;
-            }else{
-                $save_log['id_sebelum']    = null;
-                $nilai_transaksi = $bbm_level;
-                $status          = 'IN';
-            }
-            $save_log['id_trans'] = $getId;
-            $save_log['tanggal']  = $tanggal;
-            $save_log['nilai']    = $nilai_transaksi;
-            $save_log['status']   = $status;
-            $save_log['id_alat']  = $id_alat;
-            $save_log['periode']  = date('Ym');
-            DB::table('transaksi_log')->insert($save_log);
-
-            #INSERT WHEN ISSET HOURMETER
-            if($hour_meter){
-                $save_hour['created_by'] = JWTAuth::user()->id;
-                $save_hour['created_at'] = new \DateTime();
-                $save_hour['id_trans']   = $getId;
-                DB::table('hourmeter')->insert($save_hour);
-            }
-            
-            $res['api_message'] = 'Berhasil Ditambahkan';
-        }else{
-            $save['updated_by'] = JWTAuth::user()->id;
-            $save['updated_at'] = new \DateTime();
-            DB::table($this->table)
-                ->where($this->pk, $id)
-                ->update($save);
-
-            #HOURMETER WHEN ISSET HOURMETER
-            if($hour_meter){
-                #HM IS EXIST IN DB
-                $cek_hm_exist = DB::table('hourmeter')->where('trans_id', $id)->count();
-                if($cek_hm_exist > 0){ #UPDATE
-                    $save_hour['updated_by'] = JWTAuth::user()->id;
-                    $save_hour['updated_at'] = new \DateTime();
-                    DB::table('hourmeter')
-                        ->where('trans_id', $id)
-                        ->update($save_hour);
-                }else{ #INSERT NEW
+                #INSERT WHEN ISSET HOURMETER
+                if($hour_meter){
                     $save_hour['created_by'] = JWTAuth::user()->id;
                     $save_hour['created_at'] = new \DateTime();
-                    $save_hour['trans_id']   = $id;
+                    $save_hour['id_trans']   = $getId;
                     DB::table('hourmeter')->insert($save_hour);
                 }
+
+                $res['api_message'] = 'Berhasil Ditambahkan';
+            }else{
+                $save['updated_by'] = JWTAuth::user()->id;
+                $save['updated_at'] = new \DateTime();
+                DB::table($this->table)
+                    ->where($this->pk, $id)
+                    ->update($save);
+
+                #HOURMETER WHEN ISSET HOURMETER
+                if($hour_meter){
+                    #HM IS EXIST IN DB
+                    $cek_hm_exist = DB::table('hourmeter')->where('id_trans', $id)->count();
+                    if($cek_hm_exist > 0){ #UPDATE
+                        $save_hour['updated_by'] = JWTAuth::user()->id;
+                        $save_hour['updated_at'] = new \DateTime();
+                        DB::table('hourmeter')
+                            ->where('id_trans', $id)
+                            ->update($save_hour);
+                    }else{ #INSERT NEW
+                        $save_hour['created_by'] = JWTAuth::user()->id;
+                        $save_hour['created_at'] = new \DateTime();
+                        $save_hour['id_trans']   = $id;
+                        DB::table('hourmeter')->insert($save_hour);
+                    }
+                }
+                #DELETE LAST LOG                
+                DB::table('transaksi_log')
+                    ->whereYear('tanggal', date('Y'))
+                    ->whereMonth('tanggal', date('m'))
+                    ->where('id_alat', $id_alat)
+                    ->delete();
+
+                #INSERT LOG DATA
+                $listperiode = DB::table($this->table)
+                    ->whereYear('tanggal', date('Y'))
+                    ->whereMonth('tanggal', date('m'))
+                    ->where('id_alat', $id_alat)
+                    ->orderBy('tanggal', 'asc')
+                    ->get();
+                $periodesebelum = DB::table($this->table)
+                    ->whereYear('tanggal', date('Y', strtotime('-1 month')))
+                    ->whereMonth('tanggal', date('m', strtotime('-1 month')))
+                    ->where('id_alat', $id_alat)
+                    ->orderBy('tanggal', 'desc')
+                    ->first();
+                $bbmstart = null;
+                if($periodesebelum){
+                    $bbmstart   = $periodesebelum->bbm_level;
+                    $id_sebelum = $periodesebelum->id;
+                }
+
+                foreach($listperiode as $k => $lp){
+                    if($bbmstart){
+                        $nilai_transaksi = $bbmstart - $lp->bbm_level;
+                        $status = 'OUT';
+                        if($nilai_transaksi < 0){ #MENGISI
+                            $status = 'IN';
+                            $nilai_transaksi = abs($nilai_transaksi);
+                        }
+                        $save_log['id_sebelum'] = $id_sebelum;
+                    }else{
+                        $status          = 'IN';
+                        $nilai_transaksi = abs($lp->bbm_level);
+                        $save_log['id_sebelum']    = null;
+                    }
+                    $save_log['id_trans'] = $lp->id;
+                    $save_log['tanggal']  = $lp->tanggal;
+                    $save_log['nilai']    = abs($nilai_transaksi);
+                    $save_log['status']   = $status;
+                    $save_log['id_alat']  = $id_alat;
+                    $save_log['periode']  = date('Ym');
+                    DB::table('transaksi_log')->insert($save_log);
+
+                    $bbmstart   = $lp->bbm_level;
+                    $id_sebelum = $lp->id;
+                }
+                $res['api_message'] = 'Berhasil Diubah';
             }
-            $res['api_message'] = 'Berhasil Diubah';
-        }
 
         #BERHASIL
+        DB::commit();
         $res['api_status']  = 1;
+        }catch (\Illuminate\Database\QueryException $e) {
+            #GAGAL
+            DB::rollback();
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Exception 1 Error';
+            $res['e']           = $e;
+        }catch (PDOException $e) {
+            #GAGAL
+            DB::rollback();
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Exception 2 Error';
+            $res['e']           = $e;
+        }catch(Exception $e){
+            #GAGAL
+            DB::rollback();
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Exception 3 Error';
+            $res['e']           = $e;
+        }
         return $this->api_output($res);
     }
 
@@ -222,7 +305,7 @@ class TransaksiController extends MiddleController
 
         $data = DB::table($this->table)
             ->select('transaksi.id', 'transaksi.tanggal', 'transaksi.id_alat', 'bbm_level', 'hour_meter', 'gps')
-            ->leftJoin('hourmeter', 'hourmeter.trans_id', '=', 'transaksi.id')
+            ->leftJoin('hourmeter', 'hourmeter.id_trans', '=', 'transaksi.id')
             ->where('transaksi.'.$this->pk, $id)->first();
 
         #BERHASIL
@@ -281,6 +364,29 @@ class TransaksiController extends MiddleController
             Sideveloper::createLog('Data Duplikat berdasarkan Alat dan Waktu', 'LOGIC', 'warning');
             return $this->api_output($res);
         }
+
+        #CEK NILAI HOURMETER
+        $hm_sebelum = DB::table('hourmeter')
+            ->where('tanggal', '<', $tanggal)
+            ->where('id_alat', $id_alat)
+            ->orderBy('tanggal', 'desc')
+            ->value('hour_meter');
+        $hm_setelah = DB::table('hourmeter')
+            ->where('tanggal', '>', $tanggal)
+            ->where('id_alat', $id_alat)
+            ->orderBy('tanggal', 'asc')
+            ->value('hour_meter');
+        if($hm_sebelum && ($hm_sebelum > $hour_meter)){
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Hour Meter sebelumnya : '. $hm_sebelum;
+            return $this->api_output($res);
+        }
+        if($hm_setelah && ($hm_setelah < $hour_meter)){
+            $res['api_status']  = 0;
+            $res['api_message'] = 'Hour Meter setelahnya : '. $hm_setelah;
+            return $this->api_output($res);
+        }
+        #END CEK HOUR METER
 
         #INSERT DATA
         $save['id_alat']    = $id_alat;
