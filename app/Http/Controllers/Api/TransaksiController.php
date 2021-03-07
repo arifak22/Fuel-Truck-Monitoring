@@ -687,13 +687,68 @@ class TransaksiController extends MiddleController
         return datatables()->of($query)->toJson();
     }
 
-    public function postProccessKonsumsi(){
-        $periode = $this->input('periode', $periode);
-        $tahun = substr($periode, 0, 4);
-        $bulan = substr($periode, 5, 2);
-        // $data = DB::table($this->table)
-        //     ->whereYear()
+    public function getGrafik(){
+        $id_alat = $this->input('alat');
+        $start   = $this->input('start_date').' 00:00:00';
+        $end     = $this->input('end_date').' 23:59:59';
+        $waktu = '';
+        $waktu   = "AND TANGGAL BETWEEN '$start' and '$end'";
+        $prepare = [];
+        $where = '';
+        if($id_alat){
+            $alat = implode (", ", $id_alat);
+            $where .= "AND a.id_alat in ($alat)";
+        }
+        $query = DB::select(DB::raw("SELECT a.id_alat, a.nama as nama_alat, IFNULL(round(b.konsumsi_bbm,2), 0) konsumsi_bbm, IFNULL(c.total_box, 0) total_box, 
+            IFNULL(round(d.selisih_hourmeter, 2), 0) selisih_hourmeter
+            from m_alat a
+            LEFT JOIN(
+                SELECT sum(nilai) konsumsi_bbm, id_alat FROM transaksi_log where 
+                status = 'OUT' $waktu
+                GROUP BY id_alat
+            ) b ON a.id_alat = b.id_alat
+            LEFT JOIN(
+                SELECT sum(box) total_box, id_alat FROM box 
+                where 1=1  $waktu
+                GROUP BY id_alat
+            ) c ON a.id_alat = c.id_alat
+            LEFT JOIN(
+                SELECT A.id_alat,(B.hour_meter-C.hour_meter) selisih_hourmeter FROM ( SELECT id_alat,
+                MAX(tanggal) maximum,MIN(tanggal) minimum FROM hourmeter 
+                where 1=1 $waktu
+                GROUP BY id_alat ) A
+                LEFT JOIN hourmeter B ON B.tanggal = A.maximum
+                LEFT JOIN hourmeter C ON C.tanggal = A.minimum
+            ) d ON a.id_alat = d.id_alat
+            WHERE 1=1 $where
+            "
+
+        ), $prepare);
+        $res['alat']              = null;
+        $res['konsumsi_bbm']      = null;
+        $res['total_box']         = null;
+        $res['selisih_hourmeter'] = null;
+        foreach($query as $q){
+            $res['alat'][]              = $q->nama_alat;
+            $res['konsumsi_bbm'][]      = $q->konsumsi_bbm;
+            $res['total_box'][]         = $q->total_box;
+            $res['selisih_hourmeter'][] = $q->selisih_hourmeter;
+        }
+        // dd($query);
+        #BERHASIL
+        $res['api_status']  = 1;
+        $res['api_message'] = 'Filter';
+        return $this->api_output($res);
+
     }
+
+    // public function postProccessKonsumsi(){
+    //     $periode = $this->input('periode', $periode);
+    //     $tahun = substr($periode, 0, 4);
+    //     $bulan = substr($periode, 5, 2);
+    //     // $data = DB::table($this->table)
+    //     //     ->whereYear()
+    // }
 
 
 }
