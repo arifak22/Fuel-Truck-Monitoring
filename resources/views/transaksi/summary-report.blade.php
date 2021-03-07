@@ -152,4 +152,15 @@
     function refreshReport(){
         tableList.ajax.reload();
     }
+
+    function exportExcel(){
+        var id_alat      = $("#id_alat").val();
+        var tipe_laporan = $("#tipe_laporan").val();
+        var start_date   = $("#start_date").val();
+        var end_date     = $("#end_date").val();
+        var start_month  = $("#start_month").val();
+        var end_month    = $("#end_month").val();
+
+        window.open("{{Sideveloper::selfUrl('export-summary')}}?id_alat=" + id_alat + "&tipe_laporan=" + tipe_laporan + "&start_date=" + start_date + "&end_date=" + end_date + "&start_month=" + start_month+ "&end_month=" + end_month);
+    }
 </script>
