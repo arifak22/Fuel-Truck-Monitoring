@@ -592,10 +592,10 @@ class TransaksiController extends MiddleController
             $ymd = Sideveloper::defaultDate($tanggal);
             $id_alat = $this->input('alat');
             $alat = implode (", ", $id_alat);
-            $whereadd = "where m_alat.id_alat in($alat)";
-            $where = "a.tanggal = (select max(aa.tanggal) from transaksi as aa where aa.id_alat in ($alat) and aa.tanggal <= '$tanggal')";
-            $where2 = "b.tanggal = (select max(bb.tanggal) from hourmeter as bb where bb.id_alat in ($alat) and bb.tanggal <= '$tanggal')";
-            $where3 = "date(c.tanggal) = $ymd";
+            $whereadd = "where ta.id_alat in($alat)";
+            $where = "a.tanggal = (select max(aa.tanggal) from transaksi as aa where aa.id_alat = a.id_alat and aa.tanggal <= '$tanggal')";
+            $where2 = "b.tanggal = (select max(bb.tanggal) from hourmeter as bb where bb.id_alat = b.id_alat and bb.tanggal <= '$tanggal')";
+            $where3 = "date(c.tanggal) = '$ymd'";
             $tanggal_box = $ymd == date('Y-m-d') ? 'Hari ini' : Sideveloper::date($tanggal);
 
         }
@@ -615,7 +615,21 @@ class TransaksiController extends MiddleController
             $whereadd
             "
         ));
-        // dd($last_data);
+        // dd("
+        // select m_alat.id_alat, m_alat.nama, m_alat.kode_alat, ta.bbm_level, ta.gps, ta.tanggal as tanggal_bbm, 
+        // ifnull(tb.hour_meter, 0) hour_meter, tb.tanggal as tanggal_hm, tc.box, CURDATE() tanggal_box
+        // from m_alat
+        // join(select bbm_level, gps, tanggal, a.id_alat from transaksi a 
+        // where $where) as ta 
+        // on ta.id_alat = m_alat.id_alat
+        // left join(
+        // select hour_meter, tanggal, id_alat from hourmeter b where $where2) as tb
+        // on tb.id_alat = m_alat.id_alat
+        // left join(select sum(box) box, id_alat from box c where $where3
+        // GROUP BY id_alat) tc 
+        // on tc.id_alat = m_alat.id_alat
+        // $whereadd
+        // ");
         $data = array();
         if($last_data){
             foreach($last_data as $key => $ld):
