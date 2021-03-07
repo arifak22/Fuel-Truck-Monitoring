@@ -777,7 +777,7 @@ class TransaksiController extends MiddleController
 
             $hourmeter = DB::select(DB::raw("SELECT (B.hour_meter-C.hour_meter) selisih_hourmeter FROM ( SELECT
                     MAX(tanggal) maximum,MIN(tanggal) minimum FROM hourmeter 
-                    where 1=1 AND date(tanggal) = '$tanggal'
+                    where 1=1 AND date(tanggal) = '$tanggal' and id_alat = '$id_alat'
                     GROUP BY id_alat ) A
                     LEFT JOIN hourmeter B ON B.tanggal = A.maximum
                     LEFT JOIN hourmeter C ON C.tanggal = A.minimum"));
