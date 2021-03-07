@@ -104,7 +104,7 @@
     function openTab(element){
         new mapboxgl.Popup({ closeOnClick: false })
             .setLngLat([element.lng, element.lat])
-            .setHTML(`<b style="font-size:16px">${element.nama}</b>
+            .setHTML(`<b style="font-size:16px">${element.nama}</b> - <a targe="_blank" href="{{url('home/truk?id=')}}${element.id_alat}">Detail</a>
                 <ul style="padding-left:20px">
                     <li>
                         BBM Level ${element.bbm_level} <br>

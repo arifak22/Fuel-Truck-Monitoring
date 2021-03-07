@@ -167,6 +167,9 @@
                 render: function ( data, type, row, meta ) {
                     return `
                             <div class="form-button-action">
+                                <button class="aksi" onclick="detail(${data})">
+                                    <span class="icon-holder"><i class="c-green-500 ti-eye"></i> </span>
+                                </button>
                                 <button class="aksi" onclick="ubah(${data})">
                                     <span class="icon-holder"><i class="c-blue-500 ti-pencil"></i> </span>
                                 </button>
@@ -216,6 +219,10 @@
         .always(function() {
             apiLoading(false);
         });
+    }
+
+    function detail(id){
+        window.open("{{url('home/truk?id=')}}" +id);
     }
 
     function hapus(id){
