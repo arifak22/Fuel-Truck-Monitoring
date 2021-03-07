@@ -40,7 +40,9 @@
     </div>
 </div>
 <script>
-    
+    $('#tanggal').datetimepicker({
+        format: 'YYYY-MM-DD HH:mm:ss'
+    });
     $('#id_alat').select2();
 
     mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpZmFrMjIiLCJhIjoiY2tqZWhwbDVuNXE1ODJ4cWo4dTF2MW1wbiJ9.tZk1uItNZtO-6dgydQxjfg';

@@ -62,6 +62,10 @@
 	</div>
 </div>
 <script>
+	
+	$('#start_date, #end_date').datetimepicker({
+        format: 'YYYY-MM-DD'
+    });
 	$('#id_alat').select2();
 	var multipleBarChart = document.getElementById('multipleBarChart').getContext('2d');
 	var myChart = new Chart(multipleBarChart, {
